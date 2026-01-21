@@ -8,6 +8,7 @@ import LibraryScreen, { LibraryHeaderLeft, LibraryHeaderRight } from "@/screens/
 import CategoriesScreen from "@/screens/CategoriesScreen";
 import { HeaderTitle } from "@/components/HeaderTitle";
 import { useTheme } from "@/hooks/useTheme";
+import { useI18n } from "@/lib/i18n";
 
 export type MainTabParamList = {
   Library: undefined;
@@ -18,6 +19,7 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 
 export default function MainTabNavigator() {
   const { theme, isDark } = useTheme();
+  const { t } = useI18n();
 
   return (
     <Tab.Navigator
@@ -62,6 +64,7 @@ export default function MainTabNavigator() {
           headerTitle: () => <HeaderTitle title="RecLib" />,
           headerLeft: () => <LibraryHeaderLeft />,
           headerRight: () => <LibraryHeaderRight />,
+          tabBarLabel: t("nav.library"),
           tabBarIcon: ({ color, size }) => (
             <Feather name="book-open" size={size} color={color} />
           ),
@@ -71,7 +74,8 @@ export default function MainTabNavigator() {
         name="Categories"
         component={CategoriesScreen}
         options={{
-          headerTitle: "Categories",
+          headerTitle: t("nav.categories"),
+          tabBarLabel: t("nav.categories"),
           tabBarIcon: ({ color, size }) => (
             <Feather name="grid" size={size} color={color} />
           ),
