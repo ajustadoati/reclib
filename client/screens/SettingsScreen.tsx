@@ -9,28 +9,36 @@ import Animated, { FadeIn } from "react-native-reanimated";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
+import { useI18n } from "@/lib/i18n";
 import { Spacing, BorderRadius, Typography } from "@/constants/theme";
-import { Category, CATEGORIES } from "@/types/recommendation";
+import { Category, CATEGORIES, Language } from "@/types/recommendation";
 import { getSettings, updateSettings, AppSettings, getAllRecommendations } from "@/lib/storage";
 
 type SortOrder = "recent" | "alphabetical" | "category";
 
-const SORT_OPTIONS: { value: SortOrder; label: string }[] = [
-  { value: "recent", label: "Most Recent" },
-  { value: "alphabetical", label: "A-Z" },
-  { value: "category", label: "By Category" },
+const LANGUAGE_OPTIONS: { value: Language; label: string; flag: string }[] = [
+  { value: "en", label: "English", flag: "🇺🇸" },
+  { value: "es", label: "Español", flag: "🇪🇸" },
 ];
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
+  const { language, setLanguage, t } = useI18n();
 
   const [settings, setSettings] = useState<AppSettings>({
     displayName: "Me",
     defaultCategory: "Books",
     sortOrder: "recent",
+    language: "en",
   });
   const [totalCount, setTotalCount] = useState(0);
+
+  const SORT_OPTIONS: { value: SortOrder; labelKey: string }[] = [
+    { value: "recent", labelKey: "settings.sort.recent" },
+    { value: "alphabetical", labelKey: "settings.sort.alphabetical" },
+    { value: "category", labelKey: "settings.sort.category" },
+  ];
 
   const loadSettings = useCallback(async () => {
     const data = await getSettings();
@@ -62,6 +70,13 @@ export default function SettingsScreen() {
     await updateSettings({ sortOrder });
   };
 
+  const handleLanguageChange = async (lang: Language) => {
+    Haptics.selectionAsync();
+    setLanguage(lang);
+    setSettings((prev) => ({ ...prev, language: lang }));
+    await updateSettings({ language: lang });
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
       <KeyboardAwareScrollViewCompat
@@ -74,7 +89,7 @@ export default function SettingsScreen() {
         <Animated.View entering={FadeIn.duration(300)}>
           <View style={styles.section}>
             <ThemedText style={[styles.sectionTitle, { color: theme.textSecondary }]}>
-              Profile
+              {t("settings.profile")}
             </ThemedText>
             <View
               style={[
@@ -92,7 +107,7 @@ export default function SettingsScreen() {
 
               <View style={styles.formGroup}>
                 <ThemedText style={[styles.label, { color: theme.textSecondary }]}>
-                  Display Name
+                  {t("settings.displayName")}
                 </ThemedText>
                 <TextInput
                   style={[
@@ -111,7 +126,7 @@ export default function SettingsScreen() {
 
           <View style={styles.section}>
             <ThemedText style={[styles.sectionTitle, { color: theme.textSecondary }]}>
-              Preferences
+              {t("settings.preferences")}
             </ThemedText>
             <View
               style={[
@@ -121,7 +136,41 @@ export default function SettingsScreen() {
             >
               <View style={styles.formGroup}>
                 <ThemedText style={[styles.label, { color: theme.textSecondary }]}>
-                  Default Category
+                  {t("settings.language")}
+                </ThemedText>
+                <View style={styles.languageRow}>
+                  {LANGUAGE_OPTIONS.map((option) => (
+                    <Pressable
+                      key={option.value}
+                      onPress={() => handleLanguageChange(option.value)}
+                      style={[
+                        styles.languageOption,
+                        {
+                          backgroundColor: language === option.value ? theme.link : theme.backgroundSecondary,
+                          borderColor: language === option.value ? theme.link : theme.border,
+                        },
+                      ]}
+                      testID={`button-language-${option.value}`}
+                    >
+                      <ThemedText style={styles.languageFlag}>{option.flag}</ThemedText>
+                      <ThemedText
+                        style={[
+                          styles.languageLabel,
+                          { color: language === option.value ? "#FFFFFF" : theme.text },
+                        ]}
+                      >
+                        {option.label}
+                      </ThemedText>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+
+              <View style={[styles.divider, { backgroundColor: theme.border }]} />
+
+              <View style={styles.formGroup}>
+                <ThemedText style={[styles.label, { color: theme.textSecondary }]}>
+                  {t("settings.defaultCategory")}
                 </ThemedText>
                 <View style={styles.optionsRow}>
                   {CATEGORIES.map((cat) => (
@@ -142,7 +191,7 @@ export default function SettingsScreen() {
                           { color: settings.defaultCategory === cat ? "#FFFFFF" : theme.text },
                         ]}
                       >
-                        {cat}
+                        {t(`category.${cat}`)}
                       </ThemedText>
                     </Pressable>
                   ))}
@@ -153,7 +202,7 @@ export default function SettingsScreen() {
 
               <View style={styles.formGroup}>
                 <ThemedText style={[styles.label, { color: theme.textSecondary }]}>
-                  Sort Order
+                  {t("settings.sortOrder")}
                 </ThemedText>
                 {SORT_OPTIONS.map((option) => (
                   <Pressable
@@ -171,7 +220,7 @@ export default function SettingsScreen() {
                         <View style={[styles.radioInner, { backgroundColor: theme.link }]} />
                       ) : null}
                     </View>
-                    <ThemedText style={styles.radioLabel}>{option.label}</ThemedText>
+                    <ThemedText style={styles.radioLabel}>{t(option.labelKey)}</ThemedText>
                   </Pressable>
                 ))}
               </View>
@@ -180,7 +229,7 @@ export default function SettingsScreen() {
 
           <View style={styles.section}>
             <ThemedText style={[styles.sectionTitle, { color: theme.textSecondary }]}>
-              About
+              {t("settings.about")}
             </ThemedText>
             <View
               style={[
@@ -189,7 +238,7 @@ export default function SettingsScreen() {
               ]}
             >
               <View style={styles.aboutRow}>
-                <ThemedText style={styles.aboutLabel}>Version</ThemedText>
+                <ThemedText style={styles.aboutLabel}>{t("settings.version")}</ThemedText>
                 <ThemedText style={[styles.aboutValue, { color: theme.textSecondary }]}>
                   1.0.0
                 </ThemedText>
@@ -198,7 +247,7 @@ export default function SettingsScreen() {
               <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
               <View style={styles.aboutRow}>
-                <ThemedText style={styles.aboutLabel}>Total Recommendations</ThemedText>
+                <ThemedText style={styles.aboutLabel}>{t("settings.total")}</ThemedText>
                 <ThemedText style={[styles.aboutValue, { color: theme.textSecondary }]}>
                   {totalCount}
                 </ThemedText>
@@ -207,14 +256,14 @@ export default function SettingsScreen() {
               <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
               <Pressable style={styles.aboutRow}>
-                <ThemedText style={styles.aboutLabel}>Privacy Policy</ThemedText>
+                <ThemedText style={styles.aboutLabel}>{t("settings.privacy")}</ThemedText>
                 <Feather name="external-link" size={16} color={theme.textTertiary} />
               </Pressable>
 
               <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
               <Pressable style={styles.aboutRow}>
-                <ThemedText style={styles.aboutLabel}>Terms of Service</ThemedText>
+                <ThemedText style={styles.aboutLabel}>{t("settings.terms")}</ThemedText>
                 <Feather name="external-link" size={16} color={theme.textTertiary} />
               </Pressable>
             </View>
@@ -222,10 +271,10 @@ export default function SettingsScreen() {
 
           <View style={styles.footer}>
             <ThemedText style={[styles.footerText, { color: theme.textTertiary }]}>
-              Recommendation Vault
+              {t("settings.footer")}
             </ThemedText>
             <ThemedText style={[styles.footerSubtext, { color: theme.textTertiary }]}>
-              Your personal curator's notebook
+              {t("settings.footerSub")}
             </ThemedText>
           </View>
         </Animated.View>
@@ -287,6 +336,28 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.sm,
     borderWidth: 1,
     ...Typography.body,
+  },
+  languageRow: {
+    flexDirection: "row",
+    gap: Spacing.md,
+  },
+  languageOption: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    gap: Spacing.sm,
+  },
+  languageFlag: {
+    fontSize: 20,
+  },
+  languageLabel: {
+    ...Typography.body,
+    fontWeight: "600",
   },
   optionsRow: {
     flexDirection: "row",

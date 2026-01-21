@@ -1,16 +1,16 @@
 {
   "expo": {
-    "name": "Recommendation Vault",
-    "slug": "recommendation-vault",
+    "name": "RecoLib",
+    "slug": "recolib",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "recommendationvault",
+    "scheme": "recolib",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.recommendationvault.app"
+      "bundleIdentifier": "com.recolib.app"
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +21,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.recommendationvault.app"
+      "package": "com.recolib.app"
     },
     "web": {
       "output": "single",
