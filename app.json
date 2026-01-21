@@ -1,16 +1,16 @@
 {
   "expo": {
-    "name": "RecoLib",
-    "slug": "recolib",
+    "name": "RecLib",
+    "slug": "reclib",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "recolib",
+    "scheme": "reclib",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.recolib.app"
+      "bundleIdentifier": "com.reclib.app"
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +21,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.recolib.app"
+      "package": "com.reclib.app"
     },
     "web": {
       "output": "single",
@@ -44,13 +44,13 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow Recommendation Vault to access your camera to capture recommendations from photos."
+          "cameraPermission": "Allow RecLib to access your camera to capture recommendations from photos."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow Recommendation Vault to access your photos to capture recommendations from images."
+          "photosPermission": "Allow RecLib to access your photos to capture recommendations from images."
         }
       ]
     ],

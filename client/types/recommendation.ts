@@ -162,7 +162,7 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "time.y": "y",
     
     // Library
-    "library.title": "Recommendation Vault",
+    "library.title": "RecLib",
     "library.empty.title": "No recommendations yet",
     "library.empty.subtitle": "Tap + to save your first",
     "library.search.placeholder": "Search recommendations...",
@@ -220,7 +220,7 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "settings.total": "Total Recommendations",
     "settings.privacy": "Privacy Policy",
     "settings.terms": "Terms of Service",
-    "settings.footer": "Recommendation Vault",
+    "settings.footer": "RecLib",
     "settings.footerSub": "Your personal curator's notebook",
   },
   es: {
@@ -278,7 +278,7 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "time.y": "a",
     
     // Library
-    "library.title": "Mi Colección",
+    "library.title": "RecLib",
     "library.empty.title": "Sin recomendaciones",
     "library.empty.subtitle": "Toca + para guardar la primera",
     "library.search.placeholder": "Buscar recomendaciones...",
@@ -336,7 +336,7 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "settings.total": "Total de Recomendaciones",
     "settings.privacy": "Política de Privacidad",
     "settings.terms": "Términos de Servicio",
-    "settings.footer": "Mi Colección",
+    "settings.footer": "RecLib",
     "settings.footerSub": "Tu cuaderno personal de recomendaciones",
   },
 };

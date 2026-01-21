@@ -59,7 +59,7 @@ export default function MainTabNavigator() {
         name="Library"
         component={LibraryScreen}
         options={{
-          headerTitle: () => <HeaderTitle title="Recommendation Vault" />,
+          headerTitle: () => <HeaderTitle title="RecLib" />,
           headerLeft: () => <LibraryHeaderLeft />,
           headerRight: () => <LibraryHeaderRight />,
           tabBarIcon: ({ color, size }) => (
