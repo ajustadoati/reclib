@@ -5,7 +5,8 @@ import {
   TextInput,
   Pressable,
   ActivityIndicator,
-  Platform,
+  Platform as RNPlatform,
+  ScrollView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
@@ -20,14 +21,16 @@ import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollV
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
 import { useTheme } from "@/hooks/useTheme";
+import { useI18n } from "@/lib/i18n";
 import { Spacing, BorderRadius, Typography } from "@/constants/theme";
 import {
   Category,
+  Platform,
   CATEGORIES,
-  Recommendation,
-  generateSmartLink,
-  getPlatformName,
+  PLATFORM_BY_CATEGORY,
   AIRecognitionResult,
+  getDefaultPlatform,
+  generateSmartLink,
 } from "@/types/recommendation";
 import {
   saveRecommendation,
@@ -45,6 +48,7 @@ type RouteType = RouteProp<RootStackParamList, "AddRecommendation">;
 export default function AddRecommendationScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
+  const { t } = useI18n();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteType>();
   const editId = route.params?.editId;
@@ -52,6 +56,7 @@ export default function AddRecommendationScreen() {
   const [mode, setMode] = useState<"choose" | "scan" | "manual">("choose");
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<Category>("Books");
+  const [platforms, setPlatforms] = useState<Platform[]>([getDefaultPlatform("Books")]);
   const [notes, setNotes] = useState("");
   const [platformUrl, setPlatformUrl] = useState("");
   const [imageUri, setImageUri] = useState<string | undefined>();
@@ -71,6 +76,7 @@ export default function AddRecommendationScreen() {
     if (existing) {
       setTitle(existing.title);
       setCategory(existing.category);
+      setPlatforms(existing.platforms || [getDefaultPlatform(existing.category)]);
       setNotes(existing.notes || "");
       setPlatformUrl(existing.platformUrl || "");
       setImageUri(existing.imageUri);
@@ -78,9 +84,56 @@ export default function AddRecommendationScreen() {
     }
   };
 
+  const handleCategoryChange = (newCategory: Category) => {
+    setCategory(newCategory);
+    setPlatforms([getDefaultPlatform(newCategory)]);
+  };
+
+  const togglePlatform = (platform: Platform) => {
+    Haptics.selectionAsync();
+    setPlatforms((prev) => {
+      if (prev.includes(platform)) {
+        if (prev.length === 1) return prev;
+        return prev.filter((p) => p !== platform);
+      } else {
+        return [...prev, platform];
+      }
+    });
+  };
+
+  const handleSave = async () => {
+    if (!title.trim() || platforms.length === 0) return;
+
+    setIsSaving(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    try {
+      const data = {
+        title: title.trim(),
+        category,
+        platforms,
+        notes: notes.trim() || undefined,
+        platformUrl: platformUrl.trim() || generateSmartLink(title.trim(), platforms[0]),
+        imageUri,
+      };
+
+      if (editId) {
+        await updateRecommendation(editId, data);
+      } else {
+        await saveRecommendation(data);
+      }
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      navigation.goBack();
+    } catch (error) {
+      console.error("Error saving recommendation:", error);
+      setIsSaving(false);
+    }
+  };
+
   useEffect(() => {
     navigation.setOptions({
-      headerTitle: editId ? "Edit Recommendation" : "Add Recommendation",
+      headerTitle: editId ? t("add.edit.title") : t("add.title"),
       headerRight: () =>
         mode !== "choose" ? (
           <Pressable
@@ -97,38 +150,13 @@ export default function AddRecommendationScreen() {
                   { color: title.trim() ? theme.link : theme.textTertiary },
                 ]}
               >
-                Save
+                {t("common.save")}
               </ThemedText>
             )}
           </Pressable>
         ) : null,
     });
-  }, [navigation, mode, title, isSaving, theme, editId]);
-
-  const handleSave = async () => {
-    if (!title.trim()) return;
-
-    setIsSaving(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
-    const data = {
-      title: title.trim(),
-      category,
-      notes: notes.trim() || undefined,
-      platformUrl: platformUrl.trim() || generateSmartLink(title.trim(), category),
-      platformName: getPlatformName(category),
-      imageUri,
-    };
-
-    if (editId) {
-      await updateRecommendation(editId, data);
-    } else {
-      await saveRecommendation(data);
-    }
-
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    navigation.goBack();
-  };
+  }, [navigation, mode, title, category, platforms, notes, platformUrl, imageUri, isSaving, theme, editId, t]);
 
   const handlePickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -148,7 +176,7 @@ export default function AddRecommendationScreen() {
   const handleTakePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== "granted") {
-      if (Platform.OS === "web") {
+      if (RNPlatform.OS === "web") {
         alert("Camera permission is required");
       }
       return;
@@ -182,6 +210,11 @@ export default function AddRecommendationScreen() {
         setAiResult(result);
         setTitle(result.title);
         setCategory(result.category);
+        if (result.platform) {
+          setPlatforms([result.platform]);
+        } else {
+          setPlatforms([getDefaultPlatform(result.category)]);
+        }
         if (result.platformUrl) {
           setPlatformUrl(result.platformUrl);
         }
@@ -200,10 +233,12 @@ export default function AddRecommendationScreen() {
     setMode("manual");
   };
 
+  const availablePlatforms = PLATFORM_BY_CATEGORY[category] || [];
+
   const renderChooseMode = () => (
     <Animated.View entering={FadeIn.duration(300)} style={styles.chooseContainer}>
       <ThemedText style={styles.chooseTitle}>
-        How would you like to add?
+        {t("add.choose.title")}
       </ThemedText>
 
       <Pressable
@@ -215,9 +250,9 @@ export default function AddRecommendationScreen() {
           <Feather name="image" size={28} color={theme.link} />
         </View>
         <View style={styles.optionContent}>
-          <ThemedText style={styles.optionTitle}>Scan Image</ThemedText>
+          <ThemedText style={styles.optionTitle}>{t("add.scan.title")}</ThemedText>
           <ThemedText style={[styles.optionDescription, { color: theme.textSecondary }]}>
-            Take a photo or pick from gallery
+            {t("add.scan.subtitle")}
           </ThemedText>
         </View>
         <Feather name="chevron-right" size={24} color={theme.textTertiary} />
@@ -232,15 +267,15 @@ export default function AddRecommendationScreen() {
           <Feather name="edit-3" size={28} color={theme.accent} />
         </View>
         <View style={styles.optionContent}>
-          <ThemedText style={styles.optionTitle}>Enter Manually</ThemedText>
+          <ThemedText style={styles.optionTitle}>{t("add.manual.title")}</ThemedText>
           <ThemedText style={[styles.optionDescription, { color: theme.textSecondary }]}>
-            Type in the details yourself
+            {t("add.manual.subtitle")}
           </ThemedText>
         </View>
         <Feather name="chevron-right" size={24} color={theme.textTertiary} />
       </Pressable>
 
-      {Platform.OS !== "web" ? (
+      {RNPlatform.OS !== "web" ? (
         <Pressable
           onPress={handleTakePhoto}
           style={[styles.optionButton, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}
@@ -250,9 +285,9 @@ export default function AddRecommendationScreen() {
             <Feather name="camera" size={28} color={theme.success} />
           </View>
           <View style={styles.optionContent}>
-            <ThemedText style={styles.optionTitle}>Take Photo</ThemedText>
+            <ThemedText style={styles.optionTitle}>{t("add.camera.title")}</ThemedText>
             <ThemedText style={[styles.optionDescription, { color: theme.textSecondary }]}>
-              Capture a screenshot or book cover
+              {t("add.camera.subtitle")}
             </ThemedText>
           </View>
           <Feather name="chevron-right" size={24} color={theme.textTertiary} />
@@ -271,20 +306,20 @@ export default function AddRecommendationScreen() {
         <View style={styles.processingContainer}>
           <ActivityIndicator size="large" color={theme.link} />
           <ThemedText style={[styles.processingText, { color: theme.textSecondary }]}>
-            Analyzing image...
+            {t("add.processing")}
           </ThemedText>
         </View>
       ) : aiResult ? (
         <Animated.View entering={FadeInDown.duration(400)} style={styles.resultContainer}>
           <Image source={successScanImage} style={styles.successIcon} contentFit="contain" />
-          <ThemedText style={styles.resultTitle}>Found it!</ThemedText>
+          <ThemedText style={styles.resultTitle}>{t("add.found")}</ThemedText>
 
           <View style={[styles.resultCard, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}>
-            <ThemedText style={styles.resultLabel}>Title</ThemedText>
+            <ThemedText style={styles.resultLabel}>{t("add.field.title")}</ThemedText>
             <ThemedText style={styles.resultValue}>{aiResult.title}</ThemedText>
 
-            <ThemedText style={[styles.resultLabel, { marginTop: Spacing.md }]}>Category</ThemedText>
-            <ThemedText style={styles.resultValue}>{aiResult.category}</ThemedText>
+            <ThemedText style={[styles.resultLabel, { marginTop: Spacing.md }]}>{t("add.field.category")}</ThemedText>
+            <ThemedText style={styles.resultValue}>{t(`category.${aiResult.category}`)}</ThemedText>
 
             {aiResult.author ? (
               <>
@@ -293,14 +328,14 @@ export default function AddRecommendationScreen() {
               </>
             ) : null}
 
-            <ThemedText style={[styles.resultLabel, { marginTop: Spacing.md }]}>Platform</ThemedText>
+            <ThemedText style={[styles.resultLabel, { marginTop: Spacing.md }]}>{t("add.field.platform")}</ThemedText>
             <ThemedText style={[styles.resultValue, { color: theme.link }]}>
-              {aiResult.platformName || getPlatformName(aiResult.category)}
+              {aiResult.platform || getDefaultPlatform(aiResult.category)}
             </ThemedText>
           </View>
 
           <Button onPress={handleUseResult} style={styles.useButton}>
-            Use This
+            {t("add.useThis")}
           </Button>
         </Animated.View>
       ) : null}
@@ -317,7 +352,7 @@ export default function AddRecommendationScreen() {
 
       <View style={styles.formGroup}>
         <ThemedText style={[styles.label, { color: theme.textSecondary }]}>
-          Title *
+          {t("add.field.title")} *
         </ThemedText>
         <TextInput
           style={[
@@ -326,7 +361,7 @@ export default function AddRecommendationScreen() {
           ]}
           value={title}
           onChangeText={setTitle}
-          placeholder="e.g., The Great Gatsby"
+          placeholder={t("add.field.title.placeholder")}
           placeholderTextColor={theme.textTertiary}
           autoFocus={!editId}
           testID="input-title"
@@ -335,13 +370,13 @@ export default function AddRecommendationScreen() {
 
       <View style={styles.formGroup}>
         <ThemedText style={[styles.label, { color: theme.textSecondary }]}>
-          Category
+          {t("add.field.category")}
         </ThemedText>
         <View style={styles.categoryRow}>
           {CATEGORIES.map((cat) => (
             <Pressable
               key={cat}
-              onPress={() => setCategory(cat)}
+              onPress={() => handleCategoryChange(cat)}
               style={[
                 styles.categoryChip,
                 {
@@ -356,7 +391,7 @@ export default function AddRecommendationScreen() {
                   { color: category === cat ? "#FFFFFF" : theme.text },
                 ]}
               >
-                {cat}
+                {t(`category.${cat}`)}
               </ThemedText>
             </Pressable>
           ))}
@@ -365,7 +400,43 @@ export default function AddRecommendationScreen() {
 
       <View style={styles.formGroup}>
         <ThemedText style={[styles.label, { color: theme.textSecondary }]}>
-          Notes (optional)
+          {t("add.field.platform")} ({platforms.length} selected)
+        </ThemedText>
+        <View style={styles.platformRow}>
+          {availablePlatforms.map((plat) => {
+            const isSelected = platforms.includes(plat);
+            return (
+              <Pressable
+                key={plat}
+                onPress={() => togglePlatform(plat)}
+                style={[
+                  styles.platformChip,
+                  {
+                    backgroundColor: isSelected ? theme.link : theme.backgroundDefault,
+                    borderColor: isSelected ? theme.link : theme.border,
+                  },
+                ]}
+              >
+                {isSelected ? (
+                  <Feather name="check" size={14} color="#FFFFFF" style={styles.checkIcon} />
+                ) : null}
+                <ThemedText
+                  style={[
+                    styles.platformChipText,
+                    { color: isSelected ? "#FFFFFF" : theme.text },
+                  ]}
+                >
+                  {plat}
+                </ThemedText>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+
+      <View style={styles.formGroup}>
+        <ThemedText style={[styles.label, { color: theme.textSecondary }]}>
+          {t("add.field.notes")}
         </ThemedText>
         <TextInput
           style={[
@@ -375,7 +446,7 @@ export default function AddRecommendationScreen() {
           ]}
           value={notes}
           onChangeText={setNotes}
-          placeholder="Why was this recommended? Any thoughts?"
+          placeholder={t("add.field.notes.placeholder")}
           placeholderTextColor={theme.textTertiary}
           multiline
           numberOfLines={4}
@@ -386,7 +457,7 @@ export default function AddRecommendationScreen() {
 
       <View style={styles.formGroup}>
         <ThemedText style={[styles.label, { color: theme.textSecondary }]}>
-          Platform URL (optional)
+          {t("add.field.url")}
         </ThemedText>
         <TextInput
           style={[
@@ -403,7 +474,7 @@ export default function AddRecommendationScreen() {
           testID="input-url"
         />
         <ThemedText style={[styles.hint, { color: theme.textTertiary }]}>
-          Leave empty to auto-generate a search link
+          {t("add.field.url.hint")}
         </ThemedText>
       </View>
     </Animated.View>
@@ -574,5 +645,26 @@ const styles = StyleSheet.create({
   categoryChipText: {
     ...Typography.small,
     fontWeight: "500",
+  },
+  platformRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginHorizontal: -Spacing.xs,
+  },
+  platformChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    margin: Spacing.xs,
+  },
+  platformChipText: {
+    ...Typography.small,
+    fontWeight: "500",
+  },
+  checkIcon: {
+    marginRight: 4,
   },
 });

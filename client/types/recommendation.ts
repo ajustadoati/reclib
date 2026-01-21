@@ -23,7 +23,7 @@ export interface Recommendation {
   id: string;
   title: string;
   category: Category;
-  platform: Platform;
+  platforms: Platform[];
   notes?: string;
   platformUrl?: string;
   imageUri?: string;

@@ -49,6 +49,8 @@ export function RecommendationCard({
     opacity.value = withSpring(1, { damping: 15, stiffness: 150 });
   };
 
+  const platforms = recommendation.platforms || [];
+
   return (
     <AnimatedPressable
       onPress={onPress}
@@ -69,7 +71,14 @@ export function RecommendationCard({
         <View style={styles.header}>
           <View style={styles.badges}>
             <CategoryBadge category={recommendation.category} size="small" />
-            <PlatformBadge platform={recommendation.platform} size="small" />
+            {platforms.slice(0, 2).map((platform) => (
+              <PlatformBadge key={platform} platform={platform} size="small" />
+            ))}
+            {platforms.length > 2 ? (
+              <ThemedText style={[styles.morePlatforms, { color: theme.textSecondary }]}>
+                +{platforms.length - 2}
+              </ThemedText>
+            ) : null}
           </View>
           <ThemedText
             style={[styles.timestamp, { color: theme.textTertiary }]}
@@ -126,6 +135,11 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: Spacing.xs,
     flex: 1,
+    alignItems: "center",
+  },
+  morePlatforms: {
+    ...Typography.caption,
+    fontWeight: "500",
   },
   title: {
     ...Typography.headline,

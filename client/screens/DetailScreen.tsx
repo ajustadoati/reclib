@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { StyleSheet, View, Pressable, Alert, Platform, Linking } from "react-native";
+import { StyleSheet, View, Pressable, Alert, Platform as RNPlatform, Linking } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -12,9 +12,11 @@ import Animated, { FadeIn } from "react-native-reanimated";
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { ThemedText } from "@/components/ThemedText";
 import { CategoryBadge } from "@/components/CategoryBadge";
+import { PlatformBadge } from "@/components/PlatformBadge";
 import { useTheme } from "@/hooks/useTheme";
+import { useI18n } from "@/lib/i18n";
 import { Spacing, BorderRadius, Typography, Shadows } from "@/constants/theme";
-import { Recommendation, generateSmartLink, getPlatformName } from "@/types/recommendation";
+import { Recommendation, generateSmartLink, Platform, PLATFORM_URLS } from "@/types/recommendation";
 import { getRecommendationById, formatTimeAgo, deleteRecommendation } from "@/lib/storage";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 
@@ -24,6 +26,7 @@ type RouteType = RouteProp<RootStackParamList, "Detail">;
 export default function DetailScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
+  const { t, language } = useI18n();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteType>();
   const { id } = route.params;
@@ -41,6 +44,7 @@ export default function DetailScreen() {
 
   useEffect(() => {
     navigation.setOptions({
+      headerTitle: t("detail.title"),
       headerRight: () => (
         <View style={styles.headerActions}>
           <Pressable
@@ -58,7 +62,7 @@ export default function DetailScreen() {
         </View>
       ),
     });
-  }, [navigation, theme, recommendation]);
+  }, [navigation, theme, recommendation, t]);
 
   const handleEdit = () => {
     if (recommendation) {
@@ -67,17 +71,17 @@ export default function DetailScreen() {
   };
 
   const handleDelete = () => {
-    if (Platform.OS === "web") {
-      if (window.confirm("Delete this recommendation?")) {
+    if (RNPlatform.OS === "web") {
+      if (window.confirm(t("detail.delete.message"))) {
         performDelete();
       }
     } else {
       Alert.alert(
-        "Delete Recommendation",
-        "Are you sure you want to delete this?",
+        t("detail.delete.title"),
+        t("detail.delete.message"),
         [
-          { text: "Cancel", style: "cancel" },
-          { text: "Delete", style: "destructive", onPress: performDelete },
+          { text: t("common.cancel"), style: "cancel" },
+          { text: t("common.delete"), style: "destructive", onPress: performDelete },
         ]
       );
     }
@@ -96,10 +100,12 @@ export default function DetailScreen() {
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-    const smartLink = recommendation.platformUrl || generateSmartLink(recommendation.title, recommendation.category);
+    const platforms = recommendation.platforms || [];
+    const smartLink = recommendation.platformUrl || 
+      (platforms.length > 0 ? generateSmartLink(recommendation.title, platforms[0]) : "");
     const shareText = `Check out "${recommendation.title}" - ${smartLink}`;
 
-    if (Platform.OS === "web") {
+    if (RNPlatform.OS === "web") {
       if (navigator.share) {
         try {
           await navigator.share({
@@ -123,10 +129,14 @@ export default function DetailScreen() {
     }
   };
 
-  const handleOpenLink = async () => {
+  const handleOpenPlatform = async (platform: Platform) => {
     if (!recommendation) return;
-    const url = recommendation.platformUrl || generateSmartLink(recommendation.title, recommendation.category);
-    await Linking.openURL(url);
+    const url = PLATFORM_URLS[platform] 
+      ? generateSmartLink(recommendation.title, platform)
+      : recommendation.platformUrl || "";
+    if (url) {
+      await Linking.openURL(url);
+    }
   };
 
   if (!recommendation) {
@@ -137,8 +147,7 @@ export default function DetailScreen() {
     );
   }
 
-  const platformName = recommendation.platformName || getPlatformName(recommendation.category);
-  const platformUrl = recommendation.platformUrl || generateSmartLink(recommendation.title, recommendation.category);
+  const platforms = recommendation.platforms || [];
 
   return (
     <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
@@ -165,34 +174,49 @@ export default function DetailScreen() {
 
           <ThemedText style={styles.title}>{recommendation.title}</ThemedText>
 
-          <Pressable onPress={handleOpenLink} style={styles.linkRow}>
-            <Feather name="external-link" size={16} color={theme.link} />
-            <ThemedText style={[styles.linkText, { color: theme.link }]}>
-              Open on {platformName}
-            </ThemedText>
-          </Pressable>
+          {platforms.length > 0 ? (
+            <View style={styles.platformsSection}>
+              <ThemedText style={[styles.sectionLabel, { color: theme.textSecondary }]}>
+                {t("detail.openOn")}
+              </ThemedText>
+              <View style={styles.platformsList}>
+                {platforms.map((platform) => (
+                  <Pressable
+                    key={platform}
+                    onPress={() => handleOpenPlatform(platform)}
+                    style={[styles.platformLink, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}
+                  >
+                    <Feather name="external-link" size={14} color={theme.link} />
+                    <ThemedText style={[styles.platformLinkText, { color: theme.link }]}>
+                      {platform}
+                    </ThemedText>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          ) : null}
 
           {recommendation.notes ? (
             <View style={styles.section}>
               <ThemedText style={[styles.sectionLabel, { color: theme.textSecondary }]}>
-                Notes
+                {t("detail.notes")}
               </ThemedText>
               <ThemedText style={styles.notes}>{recommendation.notes}</ThemedText>
             </View>
           ) : null}
 
-          <View style={styles.metaSection}>
+          <View style={[styles.metaSection, { borderTopColor: theme.border }]}>
             <View style={styles.metaRow}>
               <Feather name="clock" size={14} color={theme.textTertiary} />
               <ThemedText style={[styles.metaText, { color: theme.textTertiary }]}>
-                Added {formatTimeAgo(recommendation.createdAt)}
+                {t("detail.added")} {formatTimeAgo(recommendation.createdAt, language)}
               </ThemedText>
             </View>
             {recommendation.updatedAt !== recommendation.createdAt ? (
               <View style={styles.metaRow}>
                 <Feather name="edit-3" size={14} color={theme.textTertiary} />
                 <ThemedText style={[styles.metaText, { color: theme.textTertiary }]}>
-                  Modified {formatTimeAgo(recommendation.updatedAt)}
+                  {t("detail.modified")} {formatTimeAgo(recommendation.updatedAt, language)}
                 </ThemedText>
               </View>
             ) : null}
@@ -235,18 +259,28 @@ const styles = StyleSheet.create({
   title: {
     ...Typography.display,
     marginTop: Spacing.lg,
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.lg,
   },
-  linkRow: {
+  platformsSection: {
+    marginBottom: Spacing["2xl"],
+  },
+  platformsList: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.sm,
+  },
+  platformLink: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: Spacing["2xl"],
+    paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    gap: Spacing.xs,
   },
-  linkText: {
-    ...Typography.body,
+  platformLinkText: {
+    ...Typography.small,
     fontWeight: "500",
-    marginLeft: Spacing.sm,
   },
   section: {
     marginBottom: Spacing["2xl"],
@@ -265,7 +299,6 @@ const styles = StyleSheet.create({
     marginTop: Spacing.lg,
     paddingTop: Spacing.lg,
     borderTopWidth: 1,
-    borderTopColor: "#E8E8E6",
   },
   metaRow: {
     flexDirection: "row",

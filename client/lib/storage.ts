@@ -85,7 +85,7 @@ export async function getRecommendationsByCategory(category: Category): Promise<
 
 export async function getRecommendationsByPlatform(platform: Platform): Promise<Recommendation[]> {
   const recommendations = await getAllRecommendations();
-  return recommendations.filter((r) => r.platform === platform);
+  return recommendations.filter((r) => r.platforms && r.platforms.includes(platform));
 }
 
 export async function searchRecommendations(query: string): Promise<Recommendation[]> {
@@ -96,7 +96,7 @@ export async function searchRecommendations(query: string): Promise<Recommendati
       r.title.toLowerCase().includes(lowerQuery) ||
       r.notes?.toLowerCase().includes(lowerQuery) ||
       r.category.toLowerCase().includes(lowerQuery) ||
-      r.platform.toLowerCase().includes(lowerQuery)
+      (r.platforms && r.platforms.some((p) => p.toLowerCase().includes(lowerQuery)))
   );
 }
 
@@ -121,7 +121,11 @@ export async function getPlatformCounts(): Promise<Record<Platform, number>> {
   const recommendations = await getAllRecommendations();
   const counts: Record<string, number> = {};
   recommendations.forEach((r) => {
-    counts[r.platform] = (counts[r.platform] || 0) + 1;
+    if (r.platforms) {
+      r.platforms.forEach((platform) => {
+        counts[platform] = (counts[platform] || 0) + 1;
+      });
+    }
   });
   return counts as Record<Platform, number>;
 }
