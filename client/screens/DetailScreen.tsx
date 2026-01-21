@@ -1,11 +1,10 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { StyleSheet, View, Pressable, Alert, Platform as RNPlatform, Linking } from "react-native";
+import { StyleSheet, View, Pressable, Alert, Platform as RNPlatform, Linking, Share } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import * as Sharing from "expo-sharing";
 import * as Haptics from "expo-haptics";
 import Animated, { FadeIn } from "react-native-reanimated";
 
@@ -15,6 +14,7 @@ import { CategoryBadge } from "@/components/CategoryBadge";
 import { PlatformBadge } from "@/components/PlatformBadge";
 import { useTheme } from "@/hooks/useTheme";
 import { useI18n } from "@/lib/i18n";
+import { createShareLink, createWebShareLink } from "@/lib/linking";
 import { Spacing, BorderRadius, Typography, Shadows } from "@/constants/theme";
 import { Recommendation, generateSmartLink, Platform, PLATFORM_URLS } from "@/types/recommendation";
 import { getRecommendationById, formatTimeAgo, deleteRecommendation } from "@/lib/storage";
@@ -100,10 +100,13 @@ export default function DetailScreen() {
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
+    const deepLink = RNPlatform.OS === "web" 
+      ? createWebShareLink(recommendation.id)
+      : createShareLink(recommendation.id);
+    
     const platforms = recommendation.platforms || [];
-    const smartLink = recommendation.platformUrl || 
-      (platforms.length > 0 ? generateSmartLink(recommendation.title, platforms[0]) : "");
-    const shareText = `Check out "${recommendation.title}" - ${smartLink}`;
+    const platformInfo = platforms.length > 0 ? ` (${platforms.join(", ")})` : "";
+    const shareText = `${t("share.checkOut")} "${recommendation.title}"${platformInfo}\n\n${t("share.openIn")}: ${deepLink}`;
 
     if (RNPlatform.OS === "web") {
       if (navigator.share) {
@@ -111,20 +114,23 @@ export default function DetailScreen() {
           await navigator.share({
             title: recommendation.title,
             text: shareText,
+            url: deepLink,
           });
         } catch (e) {
           console.log("Share cancelled");
         }
       } else {
         await navigator.clipboard.writeText(shareText);
-        alert("Link copied to clipboard!");
+        alert(t("share.copied"));
       }
     } else {
-      const isAvailable = await Sharing.isAvailableAsync();
-      if (isAvailable) {
-        await Sharing.shareAsync(smartLink, {
-          dialogTitle: `Share: ${recommendation.title}`,
+      try {
+        await Share.share({
+          message: shareText,
+          title: recommendation.title,
         });
+      } catch (e) {
+        console.log("Share failed:", e);
       }
     }
   };

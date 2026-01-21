@@ -204,6 +204,11 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "detail.delete.title": "Delete Recommendation",
     "detail.delete.message": "Are you sure you want to delete this?",
     
+    // Share
+    "share.checkOut": "Check out",
+    "share.openIn": "Open in RecLib",
+    "share.copied": "Link copied to clipboard!",
+    
     // Settings
     "settings.title": "Settings",
     "settings.profile": "Profile",
@@ -319,6 +324,11 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "detail.modified": "Modificado",
     "detail.delete.title": "Eliminar Recomendación",
     "detail.delete.message": "¿Estás seguro de que quieres eliminar esto?",
+    
+    // Share
+    "share.checkOut": "Mira",
+    "share.openIn": "Abrir en RecLib",
+    "share.copied": "¡Enlace copiado al portapapeles!",
     
     // Settings
     "settings.title": "Ajustes",
