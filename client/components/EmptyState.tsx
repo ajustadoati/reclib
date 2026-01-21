@@ -4,6 +4,7 @@ import { Image } from "expo-image";
 
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
+import { useI18n } from "@/lib/i18n";
 import { Spacing, Typography } from "@/constants/theme";
 
 import emptyLibraryImage from "../assets/images/empty-library.png";
@@ -16,36 +17,45 @@ interface EmptyStateProps {
   categoryName?: string;
 }
 
-const EMPTY_STATE_CONFIG: Record<EmptyStateType, { title: string; subtitle: string }> = {
-  library: {
-    title: "No recommendations yet",
-    subtitle: "Tap + to save your first",
-  },
-  categories: {
-    title: "Nothing saved yet",
-    subtitle: "Start adding recommendations to see them organized here",
-  },
-  search: {
-    title: "No results found",
-    subtitle: "Try a different search term",
-  },
-  category: {
-    title: "No items in this category",
-    subtitle: "Add recommendations to see them here",
-  },
-};
-
 export function EmptyState({ type, categoryName }: EmptyStateProps) {
   const { theme } = useTheme();
-  const config = EMPTY_STATE_CONFIG[type];
+  const { t } = useI18n();
+
+  const getConfig = () => {
+    switch (type) {
+      case "library":
+        return {
+          title: t("library.empty.title"),
+          subtitle: t("library.empty.subtitle"),
+        };
+      case "categories":
+        return {
+          title: t("categories.empty.title"),
+          subtitle: t("categories.empty.subtitle"),
+        };
+      case "search":
+        return {
+          title: t("library.search.empty"),
+          subtitle: "",
+        };
+      case "category":
+        return {
+          title: categoryName ? `${t("library.empty.title")}` : t("library.empty.title"),
+          subtitle: t("library.empty.subtitle"),
+        };
+      default:
+        return {
+          title: t("library.empty.title"),
+          subtitle: t("library.empty.subtitle"),
+        };
+    }
+  };
+
+  const config = getConfig();
   
   const imageSource = type === "library" || type === "search" || type === "category"
     ? emptyLibraryImage
     : emptyCategoriesImage;
-
-  const title = type === "category" && categoryName
-    ? `No ${categoryName} yet`
-    : config.title;
 
   return (
     <View style={styles.container}>
@@ -54,10 +64,12 @@ export function EmptyState({ type, categoryName }: EmptyStateProps) {
         style={styles.image}
         contentFit="contain"
       />
-      <ThemedText style={styles.title}>{title}</ThemedText>
-      <ThemedText style={[styles.subtitle, { color: theme.textSecondary }]}>
-        {config.subtitle}
-      </ThemedText>
+      <ThemedText style={styles.title}>{config.title}</ThemedText>
+      {config.subtitle ? (
+        <ThemedText style={[styles.subtitle, { color: theme.textSecondary }]}>
+          {config.subtitle}
+        </ThemedText>
+      ) : null}
     </View>
   );
 }

@@ -9,7 +9,9 @@ import Animated, {
 
 import { ThemedText } from "@/components/ThemedText";
 import { CategoryBadge } from "@/components/CategoryBadge";
+import { PlatformBadge } from "@/components/PlatformBadge";
 import { useTheme } from "@/hooks/useTheme";
+import { useI18n } from "@/lib/i18n";
 import { Spacing, BorderRadius, Typography } from "@/constants/theme";
 import { Recommendation } from "@/types/recommendation";
 import { formatTimeAgo } from "@/lib/storage";
@@ -28,6 +30,7 @@ export function RecommendationCard({
   onLongPress,
 }: RecommendationCardProps) {
   const { theme } = useTheme();
+  const { language } = useI18n();
   const scale = useSharedValue(1);
   const opacity = useSharedValue(1);
 
@@ -64,11 +67,14 @@ export function RecommendationCard({
     >
       <View style={styles.content}>
         <View style={styles.header}>
-          <CategoryBadge category={recommendation.category} size="small" />
+          <View style={styles.badges}>
+            <CategoryBadge category={recommendation.category} size="small" />
+            <PlatformBadge platform={recommendation.platform} size="small" />
+          </View>
           <ThemedText
             style={[styles.timestamp, { color: theme.textTertiary }]}
           >
-            {formatTimeAgo(recommendation.createdAt)}
+            {formatTimeAgo(recommendation.createdAt, language)}
           </ThemedText>
         </View>
 
@@ -83,16 +89,6 @@ export function RecommendationCard({
           >
             {recommendation.notes}
           </ThemedText>
-        ) : null}
-
-        {recommendation.platformName ? (
-          <View style={styles.platformRow}>
-            <ThemedText
-              style={[styles.platform, { color: theme.link }]}
-            >
-              {recommendation.platformName}
-            </ThemedText>
-          </View>
         ) : null}
       </View>
 
@@ -121,9 +117,15 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
     marginBottom: Spacing.sm,
+  },
+  badges: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.xs,
+    flex: 1,
   },
   title: {
     ...Typography.headline,
@@ -135,13 +137,7 @@ const styles = StyleSheet.create({
   },
   timestamp: {
     ...Typography.caption,
-  },
-  platformRow: {
-    marginTop: Spacing.xs,
-  },
-  platform: {
-    ...Typography.caption,
-    fontWeight: "500",
+    marginLeft: Spacing.sm,
   },
   thumbnail: {
     width: 60,

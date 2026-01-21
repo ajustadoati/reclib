@@ -9,6 +9,7 @@ import Animated, {
 
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
+import { useI18n } from "@/lib/i18n";
 import { Spacing, BorderRadius, Typography, CategoryColors } from "@/constants/theme";
 import { Category } from "@/types/recommendation";
 
@@ -21,7 +22,8 @@ interface CategoryTileProps {
 const CATEGORY_ICONS: Record<Category, keyof typeof Feather.glyphMap> = {
   Books: "book",
   Movies: "film",
-  TV: "tv",
+  Series: "tv",
+  TV: "monitor",
   Music: "music",
   Podcasts: "mic",
   Other: "folder",
@@ -31,9 +33,10 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export function CategoryTile({ category, count, onPress }: CategoryTileProps) {
   const { theme, isDark } = useTheme();
+  const { t } = useI18n();
   const scale = useSharedValue(1);
   const opacity = useSharedValue(1);
-  const categoryColor = CategoryColors[category];
+  const categoryColor = CategoryColors[category] || CategoryColors.Other;
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -49,6 +52,8 @@ export function CategoryTile({ category, count, onPress }: CategoryTileProps) {
     scale.value = withSpring(1, { damping: 15, stiffness: 150 });
     opacity.value = withSpring(1, { damping: 15, stiffness: 150 });
   };
+
+  const translatedCategory = t(`category.${category}`);
 
   return (
     <AnimatedPressable
@@ -82,10 +87,10 @@ export function CategoryTile({ category, count, onPress }: CategoryTileProps) {
         />
       </View>
 
-      <ThemedText style={styles.categoryName}>{category}</ThemedText>
+      <ThemedText style={styles.categoryName}>{translatedCategory}</ThemedText>
 
       <ThemedText style={[styles.count, { color: theme.textSecondary }]}>
-        {count} saved
+        {count} {t("common.saved")}
       </ThemedText>
     </AnimatedPressable>
   );

@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Recommendation, Category } from "@/types/recommendation";
+import { Recommendation, Category, Platform, Language } from "@/types/recommendation";
 
 const STORAGE_KEY = "@recommendation_vault";
 const SETTINGS_KEY = "@recommendation_vault_settings";
@@ -8,12 +8,14 @@ export interface AppSettings {
   displayName: string;
   defaultCategory: Category;
   sortOrder: "recent" | "alphabetical" | "category";
+  language: Language;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
   displayName: "Me",
-  defaultCategory: "Books",
+  defaultCategory: "Movies",
   sortOrder: "recent",
+  language: "en",
 };
 
 function generateId(): string {
@@ -81,6 +83,11 @@ export async function getRecommendationsByCategory(category: Category): Promise<
   return recommendations.filter((r) => r.category === category);
 }
 
+export async function getRecommendationsByPlatform(platform: Platform): Promise<Recommendation[]> {
+  const recommendations = await getAllRecommendations();
+  return recommendations.filter((r) => r.platform === platform);
+}
+
 export async function searchRecommendations(query: string): Promise<Recommendation[]> {
   const recommendations = await getAllRecommendations();
   const lowerQuery = query.toLowerCase();
@@ -88,7 +95,8 @@ export async function searchRecommendations(query: string): Promise<Recommendati
     (r) =>
       r.title.toLowerCase().includes(lowerQuery) ||
       r.notes?.toLowerCase().includes(lowerQuery) ||
-      r.category.toLowerCase().includes(lowerQuery)
+      r.category.toLowerCase().includes(lowerQuery) ||
+      r.platform.toLowerCase().includes(lowerQuery)
   );
 }
 
@@ -97,6 +105,7 @@ export async function getCategoryCounts(): Promise<Record<Category, number>> {
   const counts: Record<Category, number> = {
     Books: 0,
     Movies: 0,
+    Series: 0,
     TV: 0,
     Music: 0,
     Podcasts: 0,
@@ -106,6 +115,15 @@ export async function getCategoryCounts(): Promise<Record<Category, number>> {
     counts[r.category]++;
   });
   return counts;
+}
+
+export async function getPlatformCounts(): Promise<Record<Platform, number>> {
+  const recommendations = await getAllRecommendations();
+  const counts: Record<string, number> = {};
+  recommendations.forEach((r) => {
+    counts[r.platform] = (counts[r.platform] || 0) + 1;
+  });
+  return counts as Record<Platform, number>;
 }
 
 export async function getSettings(): Promise<AppSettings> {
@@ -126,20 +144,29 @@ export async function updateSettings(settings: Partial<AppSettings>): Promise<Ap
   return updated;
 }
 
-export function formatTimeAgo(timestamp: number): string {
+export function formatTimeAgo(timestamp: number, language: Language = "en"): string {
   const seconds = Math.floor((Date.now() - timestamp) / 1000);
   
-  if (seconds < 60) return "Just now";
+  const justNow = language === "es" ? "Ahora mismo" : "Just now";
+  const ago = language === "es" ? "" : " ago";
+  
+  if (seconds < 60) return justNow;
+  
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 60) return `${minutes}m${ago}`;
+  
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return `${hours}h${ago}`;
+  
   const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
+  if (days < 7) return `${days}d${ago}`;
+  
   const weeks = Math.floor(days / 7);
-  if (weeks < 4) return `${weeks}w ago`;
+  if (weeks < 4) return `${weeks}${language === "es" ? "s" : "w"}${ago}`;
+  
   const months = Math.floor(days / 30);
-  if (months < 12) return `${months}mo ago`;
+  if (months < 12) return `${months}${language === "es" ? " mes" : "mo"}${ago}`;
+  
   const years = Math.floor(days / 365);
-  return `${years}y ago`;
+  return `${years}${language === "es" ? "a" : "y"}${ago}`;
 }
