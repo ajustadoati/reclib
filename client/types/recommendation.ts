@@ -1,4 +1,4 @@
-export type Category = "Books" | "Movies" | "Series" | "TV" | "Music" | "Podcasts" | "Other";
+export type Category = "Books" | "Movies" | "Series" | "TV" | "Music" | "Podcasts" | "Links" | "Other";
 
 export type Platform = 
   | "Netflix"
@@ -17,6 +17,13 @@ export type Platform =
   | "Apple Podcasts"
   | "IMDb"
   | "Letterboxd"
+  | "Medium"
+  | "Substack"
+  | "Reddit"
+  | "Twitter"
+  | "News"
+  | "Blog"
+  | "Website"
   | "Other";
 
 export interface Recommendation {
@@ -40,7 +47,7 @@ export interface AIRecognitionResult {
   confidence: number;
 }
 
-export const CATEGORIES: Category[] = ["Books", "Movies", "Series", "TV", "Music", "Podcasts", "Other"];
+export const CATEGORIES: Category[] = ["Books", "Movies", "Series", "TV", "Music", "Podcasts", "Links", "Other"];
 
 export const PLATFORMS: Platform[] = [
   "Netflix",
@@ -59,6 +66,13 @@ export const PLATFORMS: Platform[] = [
   "Apple Podcasts",
   "IMDb",
   "Letterboxd",
+  "Medium",
+  "Substack",
+  "Reddit",
+  "Twitter",
+  "News",
+  "Blog",
+  "Website",
   "Other",
 ];
 
@@ -69,6 +83,7 @@ export const PLATFORM_BY_CATEGORY: Record<Category, Platform[]> = {
   TV: ["Netflix", "HBO Max", "Apple TV+", "Disney+", "Amazon Prime", "Hulu", "Paramount+", "Peacock", "YouTube", "Other"],
   Music: ["Spotify", "Apple Music", "YouTube", "Other"],
   Podcasts: ["Spotify", "Apple Podcasts", "YouTube", "Other"],
+  Links: ["Medium", "Substack", "Reddit", "Twitter", "News", "Blog", "Website", "YouTube", "Other"],
   Other: ["Other"],
 };
 
@@ -89,6 +104,13 @@ export const PLATFORM_URLS: Record<Platform, string> = {
   "Apple Podcasts": "https://podcasts.apple.com/search?term=",
   "IMDb": "https://www.imdb.com/find?q=",
   "Letterboxd": "https://letterboxd.com/search/",
+  "Medium": "https://medium.com/search?q=",
+  "Substack": "https://substack.com/search/",
+  "Reddit": "https://www.reddit.com/search/?q=",
+  "Twitter": "https://twitter.com/search?q=",
+  "News": "https://news.google.com/search?q=",
+  "Blog": "https://www.google.com/search?q=",
+  "Website": "https://www.google.com/search?q=",
   "Other": "https://www.google.com/search?q=",
 };
 
@@ -120,6 +142,7 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "category.TV": "TV",
     "category.Music": "Music",
     "category.Podcasts": "Podcasts",
+    "category.Links": "Links",
     "category.Other": "Other",
     
     // Platforms
@@ -139,6 +162,13 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "platform.Apple Podcasts": "Apple Podcasts",
     "platform.IMDb": "IMDb",
     "platform.Letterboxd": "Letterboxd",
+    "platform.Medium": "Medium",
+    "platform.Substack": "Substack",
+    "platform.Reddit": "Reddit",
+    "platform.Twitter": "Twitter",
+    "platform.News": "News",
+    "platform.Blog": "Blog",
+    "platform.Website": "Website",
     "platform.Other": "Other",
     
     // Common
@@ -241,6 +271,7 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "category.TV": "TV",
     "category.Music": "Música",
     "category.Podcasts": "Podcasts",
+    "category.Links": "Enlaces",
     "category.Other": "Otro",
     
     // Platforms
@@ -260,6 +291,13 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "platform.Apple Podcasts": "Apple Podcasts",
     "platform.IMDb": "IMDb",
     "platform.Letterboxd": "Letterboxd",
+    "platform.Medium": "Medium",
+    "platform.Substack": "Substack",
+    "platform.Reddit": "Reddit",
+    "platform.Twitter": "Twitter",
+    "platform.News": "Noticias",
+    "platform.Blog": "Blog",
+    "platform.Website": "Sitio Web",
     "platform.Other": "Otro",
     
     // Common

@@ -109,6 +109,7 @@ export async function getCategoryCounts(): Promise<Record<Category, number>> {
     TV: 0,
     Music: 0,
     Podcasts: 0,
+    Links: 0,
     Other: 0,
   };
   recommendations.forEach((r) => {
