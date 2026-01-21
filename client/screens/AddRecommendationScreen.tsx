@@ -36,6 +36,7 @@ import {
   saveRecommendation,
   updateRecommendation,
   getRecommendationById,
+  persistImage,
 } from "@/lib/storage";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
@@ -167,9 +168,10 @@ export default function AddRecommendationScreen() {
 
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
-      setImageUri(asset.uri);
+      const permanentUri = await persistImage(asset.uri);
+      setImageUri(permanentUri);
       setMode("scan");
-      processImage(asset.base64 || "", asset.uri);
+      processImage(asset.base64 || "", permanentUri);
     }
   };
 
@@ -189,9 +191,10 @@ export default function AddRecommendationScreen() {
 
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
-      setImageUri(asset.uri);
+      const permanentUri = await persistImage(asset.uri);
+      setImageUri(permanentUri);
       setMode("scan");
-      processImage(asset.base64 || "", asset.uri);
+      processImage(asset.base64 || "", permanentUri);
     }
   };
 

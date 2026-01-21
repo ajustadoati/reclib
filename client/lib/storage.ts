@@ -1,8 +1,11 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Paths, File as FSFile, Directory } from "expo-file-system";
+import { Platform as RNPlatform } from "react-native";
 import { Recommendation, Category, Platform, Language } from "@/types/recommendation";
 
 const STORAGE_KEY = "@recommendation_vault";
 const SETTINGS_KEY = "@recommendation_vault_settings";
+const IMAGES_DIR_NAME = "recommendation_images";
 
 export interface AppSettings {
   displayName: string;
@@ -20,6 +23,52 @@ const DEFAULT_SETTINGS: AppSettings = {
 
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
+
+function getImagesDirectory(): Directory {
+  return new Directory(Paths.document, IMAGES_DIR_NAME);
+}
+
+function ensureImagesDirExists(): void {
+  if (RNPlatform.OS === "web") return;
+  const imagesDir = getImagesDirectory();
+  if (!imagesDir.exists) {
+    imagesDir.create();
+  }
+}
+
+export async function persistImage(tempUri: string): Promise<string> {
+  if (RNPlatform.OS === "web") {
+    return tempUri;
+  }
+  
+  try {
+    ensureImagesDirExists();
+    const filename = `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.jpg`;
+    const imagesDir = getImagesDirectory();
+    const sourceFile = new FSFile(tempUri);
+    const destFile = new FSFile(imagesDir, filename);
+    sourceFile.copy(destFile);
+    return destFile.uri;
+  } catch (error) {
+    console.error("Error persisting image:", error);
+    return tempUri;
+  }
+}
+
+export async function deletePersistedImage(imageUri: string): Promise<void> {
+  if (RNPlatform.OS === "web") return;
+  const imagesDir = getImagesDirectory();
+  if (!imageUri || !imageUri.includes(IMAGES_DIR_NAME)) return;
+  
+  try {
+    const file = new FSFile(imageUri);
+    if (file.exists) {
+      file.delete();
+    }
+  } catch (error) {
+    console.error("Error deleting image:", error);
+  }
 }
 
 export async function getAllRecommendations(): Promise<Recommendation[]> {
@@ -72,8 +121,14 @@ export async function updateRecommendation(
 
 export async function deleteRecommendation(id: string): Promise<boolean> {
   const recommendations = await getAllRecommendations();
+  const toDelete = recommendations.find((r) => r.id === id);
   const filtered = recommendations.filter((r) => r.id !== id);
   if (filtered.length === recommendations.length) return false;
+  
+  if (toDelete?.imageUri) {
+    await deletePersistedImage(toDelete.imageUri);
+  }
+  
   await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
   return true;
 }
