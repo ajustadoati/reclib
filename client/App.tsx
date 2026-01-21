@@ -1,11 +1,12 @@
 import React, { useEffect } from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, Platform } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
+import * as Linking from "expo-linking";
 import {
   useFonts,
   Inter_400Regular,
@@ -17,6 +18,7 @@ import {
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/query-client";
 import { I18nProvider } from "@/lib/i18n";
+import { linking } from "@/lib/linking";
 
 import RootStackNavigator from "@/navigation/RootStackNavigator";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -37,6 +39,24 @@ export default function App() {
     }
   }, [fontsLoaded, fontError]);
 
+  useEffect(() => {
+    const handleDeepLink = (event: { url: string }) => {
+      console.log("Deep link received:", event.url);
+    };
+
+    const subscription = Linking.addEventListener("url", handleDeepLink);
+
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        console.log("Initial URL:", url);
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
   if (!fontsLoaded && !fontError) {
     return null;
   }
@@ -48,7 +68,7 @@ export default function App() {
           <SafeAreaProvider>
             <GestureHandlerRootView style={styles.root}>
               <KeyboardProvider>
-                <NavigationContainer>
+                <NavigationContainer linking={linking}>
                   <RootStackNavigator />
                 </NavigationContainer>
                 <StatusBar style="auto" />
