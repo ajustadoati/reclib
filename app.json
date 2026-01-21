@@ -1,25 +1,27 @@
 {
   "expo": {
-    "name": "my-app",
-    "slug": "my-app",
+    "name": "Recommendation Vault",
+    "slug": "recommendation-vault",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "scheme": "recommendationvault",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.recommendationvault.app"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#FAFAF8",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.recommendationvault.app"
     },
     "web": {
       "output": "single",
@@ -32,13 +34,25 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#FAFAF8",
           "dark": {
-            "backgroundColor": "#000000"
+            "backgroundColor": "#1A1C1E"
           }
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Recommendation Vault to access your camera to capture recommendations from photos."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Recommendation Vault to access your photos to capture recommendations from images."
+        }
+      ]
     ],
     "experiments": {
       "reactCompiler": true

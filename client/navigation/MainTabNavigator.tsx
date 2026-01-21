@@ -3,13 +3,15 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { Platform, StyleSheet } from "react-native";
-import HomeStackNavigator from "@/navigation/HomeStackNavigator";
-import ProfileStackNavigator from "@/navigation/ProfileStackNavigator";
+
+import LibraryScreen, { LibraryHeaderLeft, LibraryHeaderRight } from "@/screens/LibraryScreen";
+import CategoriesScreen from "@/screens/CategoriesScreen";
+import { HeaderTitle } from "@/components/HeaderTitle";
 import { useTheme } from "@/hooks/useTheme";
 
 export type MainTabParamList = {
-  HomeTab: undefined;
-  ProfileTab: undefined;
+  Library: undefined;
+  Categories: undefined;
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -19,10 +21,21 @@ export default function MainTabNavigator() {
 
   return (
     <Tab.Navigator
-      initialRouteName="HomeTab"
+      initialRouteName="Library"
       screenOptions={{
         tabBarActiveTintColor: theme.tabIconSelected,
         tabBarInactiveTintColor: theme.tabIconDefault,
+        headerTitleAlign: "center",
+        headerTransparent: true,
+        headerBlurEffect: isDark ? "dark" : "light",
+        headerTintColor: theme.text,
+        headerStyle: {
+          backgroundColor: Platform.select({
+            ios: undefined,
+            android: theme.backgroundRoot,
+            web: theme.backgroundRoot,
+          }),
+        },
         tabBarStyle: {
           position: "absolute",
           backgroundColor: Platform.select({
@@ -40,26 +53,27 @@ export default function MainTabNavigator() {
               style={StyleSheet.absoluteFill}
             />
           ) : null,
-        headerShown: false,
       }}
     >
       <Tab.Screen
-        name="HomeTab"
-        component={HomeStackNavigator}
+        name="Library"
+        component={LibraryScreen}
         options={{
-          title: "Home",
+          headerTitle: () => <HeaderTitle title="Recommendation Vault" />,
+          headerLeft: () => <LibraryHeaderLeft />,
+          headerRight: () => <LibraryHeaderRight />,
           tabBarIcon: ({ color, size }) => (
-            <Feather name="home" size={size} color={color} />
+            <Feather name="book-open" size={size} color={color} />
           ),
         }}
       />
       <Tab.Screen
-        name="ProfileTab"
-        component={ProfileStackNavigator}
+        name="Categories"
+        component={CategoriesScreen}
         options={{
-          title: "Profile",
+          headerTitle: "Categories",
           tabBarIcon: ({ color, size }) => (
-            <Feather name="user" size={size} color={color} />
+            <Feather name="grid" size={size} color={color} />
           ),
         }}
       />
