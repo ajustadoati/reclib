@@ -238,6 +238,24 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "share.checkOut": "Check out",
     "share.openIn": "Open in RecLib",
     "share.copied": "Link copied to clipboard!",
+    "share.uploading": "Creating share link...",
+    "share.failed": "Failed to create share link",
+    
+    // Import
+    "import.title": "Shared Recommendation",
+    "import.sharedWithYou": "Shared with you",
+    "import.addToLibrary": "Add to My Library",
+    "import.importing": "Adding...",
+    "import.success": "Added!",
+    "import.successMessage": "The recommendation was added to your library.",
+    "import.notFound": "This recommendation was not found or has expired.",
+    "import.error": "Failed to load the shared recommendation.",
+    "import.importError": "Failed to add to your library.",
+    
+    // Common
+    "common.loading": "Loading...",
+    "common.goBack": "Go Back",
+    "common.error": "Error",
     
     // Settings
     "settings.title": "Settings",
@@ -367,6 +385,24 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "share.checkOut": "Mira",
     "share.openIn": "Abrir en RecLib",
     "share.copied": "¡Enlace copiado al portapapeles!",
+    "share.uploading": "Creando enlace...",
+    "share.failed": "Error al crear el enlace",
+    
+    // Import
+    "import.title": "Recomendación Compartida",
+    "import.sharedWithYou": "Compartido contigo",
+    "import.addToLibrary": "Agregar a Mi Biblioteca",
+    "import.importing": "Agregando...",
+    "import.success": "¡Agregado!",
+    "import.successMessage": "La recomendación fue agregada a tu biblioteca.",
+    "import.notFound": "Esta recomendación no fue encontrada o ha expirado.",
+    "import.error": "Error al cargar la recomendación compartida.",
+    "import.importError": "Error al agregar a tu biblioteca.",
+    
+    // Common
+    "common.loading": "Cargando...",
+    "common.goBack": "Volver",
+    "common.error": "Error",
     
     // Settings
     "settings.title": "Ajustes",

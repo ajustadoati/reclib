@@ -1,11 +1,12 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { StyleSheet, View, Pressable, Alert, Platform as RNPlatform, Linking, Share } from "react-native";
+import { StyleSheet, View, Pressable, Alert, Platform as RNPlatform, Linking, Share, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import * as Haptics from "expo-haptics";
+import * as FileSystem from "expo-file-system";
 import Animated, { FadeIn } from "react-native-reanimated";
 
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
@@ -15,6 +16,7 @@ import { PlatformBadge } from "@/components/PlatformBadge";
 import { useTheme } from "@/hooks/useTheme";
 import { useI18n } from "@/lib/i18n";
 import { createShareLink, createWebShareLink } from "@/lib/linking";
+import { getApiUrl } from "@/lib/query-client";
 import { Spacing, BorderRadius, Typography, Shadows } from "@/constants/theme";
 import { Recommendation, generateSmartLink, Platform, PLATFORM_URLS } from "@/types/recommendation";
 import { getRecommendationById, formatTimeAgo, deleteRecommendation } from "@/lib/storage";
@@ -32,6 +34,7 @@ export default function DetailScreen() {
   const { id } = route.params;
 
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
 
   const loadRecommendation = useCallback(async () => {
     const data = await getRecommendationById(id);
@@ -96,42 +99,94 @@ export default function DetailScreen() {
   };
 
   const handleShare = async () => {
-    if (!recommendation) return;
+    if (!recommendation || isSharing) return;
 
+    setIsSharing(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-    const deepLink = RNPlatform.OS === "web" 
-      ? createWebShareLink(recommendation.id)
-      : createShareLink(recommendation.id);
-    
-    const platforms = recommendation.platforms || [];
-    const platformInfo = platforms.length > 0 ? ` (${platforms.join(", ")})` : "";
-    const shareText = `${t("share.checkOut")} "${recommendation.title}"${platformInfo}\n\n${t("share.openIn")}: ${deepLink}`;
-
-    if (RNPlatform.OS === "web") {
-      if (navigator.share) {
+    try {
+      let imageBase64: string | null = null;
+      
+      if (recommendation.imageUri && !recommendation.imageUri.startsWith("data:")) {
         try {
-          await navigator.share({
-            title: recommendation.title,
-            text: shareText,
-            url: deepLink,
+          const base64 = await FileSystem.readAsStringAsync(recommendation.imageUri, {
+            encoding: "base64" as const,
           });
+          imageBase64 = base64;
         } catch (e) {
-          console.log("Share cancelled");
+          console.log("Could not read image for sharing:", e);
+        }
+      } else if (recommendation.imageUri?.startsWith("data:image")) {
+        const parts = recommendation.imageUri.split(",");
+        if (parts.length > 1) {
+          imageBase64 = parts[1];
+        }
+      }
+
+      const baseUrl = getApiUrl();
+      const response = await fetch(`${baseUrl}api/share`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: recommendation.title,
+          category: recommendation.category,
+          platforms: recommendation.platforms,
+          notes: recommendation.notes,
+          platformUrl: recommendation.platformUrl,
+          imageBase64,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create share link");
+      }
+
+      const { shareId } = await response.json();
+      
+      const deepLink = RNPlatform.OS === "web" 
+        ? createWebShareLink(shareId)
+        : createShareLink(shareId);
+      
+      const platforms = recommendation.platforms || [];
+      const platformInfo = platforms.length > 0 ? ` (${platforms.join(", ")})` : "";
+      const shareText = `${t("share.checkOut")} "${recommendation.title}"${platformInfo}\n\n${t("share.openIn")}: ${deepLink}`;
+
+      if (RNPlatform.OS === "web") {
+        if (navigator.share) {
+          try {
+            await navigator.share({
+              title: recommendation.title,
+              text: shareText,
+              url: deepLink,
+            });
+          } catch (e) {
+            console.log("Share cancelled");
+          }
+        } else {
+          await navigator.clipboard.writeText(shareText);
+          alert(t("share.copied"));
         }
       } else {
-        await navigator.clipboard.writeText(shareText);
-        alert(t("share.copied"));
+        try {
+          await Share.share({
+            message: shareText,
+            title: recommendation.title,
+          });
+        } catch (e) {
+          console.log("Share failed:", e);
+        }
       }
-    } else {
-      try {
-        await Share.share({
-          message: shareText,
-          title: recommendation.title,
-        });
-      } catch (e) {
-        console.log("Share failed:", e);
+    } catch (error) {
+      console.error("Share error:", error);
+      if (RNPlatform.OS === "web") {
+        alert(t("share.failed"));
+      } else {
+        Alert.alert(t("common.error"), t("share.failed"));
       }
+    } finally {
+      setIsSharing(false);
     }
   };
 
@@ -232,14 +287,19 @@ export default function DetailScreen() {
 
       <Pressable
         onPress={handleShare}
+        disabled={isSharing}
         style={[
           styles.shareButton,
-          { backgroundColor: theme.accent, bottom: insets.bottom + Spacing.xl },
+          { backgroundColor: isSharing ? `${theme.accent}80` : theme.accent, bottom: insets.bottom + Spacing.xl },
           Shadows.fab,
         ]}
         testID="button-share"
       >
-        <Feather name="share" size={24} color="#FFFFFF" />
+        {isSharing ? (
+          <ActivityIndicator size="small" color="#FFFFFF" />
+        ) : (
+          <Feather name="share" size={24} color="#FFFFFF" />
+        )}
       </Pressable>
     </View>
   );

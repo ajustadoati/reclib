@@ -1,6 +1,7 @@
 import { LinkingOptions } from "@react-navigation/native";
 import * as Linking from "expo-linking";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
+import { getApiUrl } from "@/lib/query-client";
 
 const prefix = Linking.createURL("/");
 
@@ -13,6 +14,9 @@ export const linking: LinkingOptions<RootStackParamList> = {
       },
       Detail: {
         path: "recommendation/:id",
+      },
+      ImportShared: {
+        path: "shared/:shareId",
       },
       AddRecommendation: {
         path: "add",
@@ -27,10 +31,15 @@ export const linking: LinkingOptions<RootStackParamList> = {
   },
 };
 
-export function createShareLink(id: string): string {
-  return `reclib://recommendation/${id}`;
+export function createShareLink(shareId: string): string {
+  return `reclib://shared/${shareId}`;
 }
 
-export function createWebShareLink(id: string): string {
-  return createShareLink(id);
+export function createWebShareLink(shareId: string): string {
+  try {
+    const baseUrl = getApiUrl();
+    return `${baseUrl}shared/${shareId}`;
+  } catch {
+    return createShareLink(shareId);
+  }
 }

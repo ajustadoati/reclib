@@ -5,12 +5,14 @@ import DetailScreen from "@/screens/DetailScreen";
 import AddRecommendationScreen from "@/screens/AddRecommendationScreen";
 import SettingsScreen from "@/screens/SettingsScreen";
 import CategoryListScreen from "@/screens/CategoryListScreen";
+import ImportSharedScreen from "@/screens/ImportSharedScreen";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 import { Category } from "@/types/recommendation";
 
 export type RootStackParamList = {
   Main: undefined;
   Detail: { id: string };
+  ImportShared: { shareId: string };
   AddRecommendation: { editId?: string } | undefined;
   Settings: undefined;
   CategoryList: { category: Category };
@@ -61,6 +63,14 @@ export default function RootStackNavigator() {
         options={({ route }) => ({
           headerTitle: route.params.category,
         })}
+      />
+      <Stack.Screen
+        name="ImportShared"
+        component={ImportSharedScreen}
+        options={{
+          ...opaqueScreenOptions,
+          headerTitle: "Shared Recommendation",
+        }}
       />
     </Stack.Navigator>
   );
