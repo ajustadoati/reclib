@@ -110,6 +110,17 @@ If you cannot identify the content, make your best guess based on visual cues li
     res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
+  // Redirect shared links opened in browser to the Expo web app
+  app.get("/shared/:id", (req: Request, res: Response) => {
+    const { id } = req.params;
+    // Redirect to Expo web app on port 8081
+    const expoWebUrl = `http://localhost:8081/shared/${id}`;
+    
+    // In production, we'd use the deployed URL
+    // For development, redirect to localhost:8081
+    res.redirect(expoWebUrl);
+  });
+
   app.post("/api/share", async (req: Request, res: Response) => {
     try {
       const { title, category, platforms, notes, platformUrl, imageBase64 } = req.body;

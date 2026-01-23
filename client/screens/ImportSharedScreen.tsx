@@ -63,7 +63,9 @@ export default function ImportSharedScreen() {
       setError(null);
       
       const baseUrl = getApiUrl();
-      const response = await fetch(`${baseUrl}api/share/${shareId}`);
+      const apiUrl = `${baseUrl}api/share/${shareId}`;
+      console.log("Fetching shared recommendation from:", apiUrl);
+      const response = await fetch(apiUrl);
       
       if (!response.ok) {
         if (response.status === 404) {
