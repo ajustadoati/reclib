@@ -238,6 +238,8 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "share.checkOut": "Check out",
     "share.openIn": "Open in RecLib",
     "share.copied": "Link copied to clipboard!",
+    "share.copyLink": "Copy Link",
+    "share.copyHint": "Paste this link in Safari or browser to open in RecLib",
     
     // Settings
     "settings.title": "Settings",
@@ -367,6 +369,8 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "share.checkOut": "Mira",
     "share.openIn": "Abrir en RecLib",
     "share.copied": "¡Enlace copiado al portapapeles!",
+    "share.copyLink": "Copiar Enlace",
+    "share.copyHint": "Pega este enlace en Safari o navegador para abrir en RecLib",
     
     // Settings
     "settings.title": "Ajustes",

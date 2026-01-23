@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { StyleSheet, View, Pressable, Alert, Platform as RNPlatform, Linking, Share } from "react-native";
+import * as Clipboard from "expo-clipboard";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -32,6 +33,7 @@ export default function DetailScreen() {
   const { id } = route.params;
 
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
+  const [showCopiedToast, setShowCopiedToast] = useState(false);
 
   const loadRecommendation = useCallback(async () => {
     const data = await getRecommendationById(id);
@@ -145,6 +147,17 @@ export default function DetailScreen() {
     }
   };
 
+  const handleCopyLink = async () => {
+    if (!recommendation) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    const deepLink = createShareLink(recommendation.id);
+    await Clipboard.setStringAsync(deepLink);
+    
+    setShowCopiedToast(true);
+    setTimeout(() => setShowCopiedToast(false), 3000);
+  };
+
   if (!recommendation) {
     return (
       <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
@@ -230,17 +243,56 @@ export default function DetailScreen() {
         </Animated.View>
       </KeyboardAwareScrollViewCompat>
 
-      <Pressable
-        onPress={handleShare}
-        style={[
-          styles.shareButton,
-          { backgroundColor: theme.accent, bottom: insets.bottom + Spacing.xl },
-          Shadows.fab,
-        ]}
-        testID="button-share"
-      >
-        <Feather name="share" size={24} color="#FFFFFF" />
-      </Pressable>
+      <View style={[styles.fabContainer, { bottom: insets.bottom + Spacing.xl }]}>
+        <Pressable
+          onPress={handleCopyLink}
+          style={[
+            styles.copyButton,
+            { backgroundColor: theme.backgroundSecondary, borderColor: theme.border },
+            Shadows.small,
+          ]}
+          testID="button-copy-link"
+        >
+          <Feather name="copy" size={18} color={theme.accent} />
+          <ThemedText style={[styles.copyButtonText, { color: theme.accent }]}>
+            {t("share.copyLink")}
+          </ThemedText>
+        </Pressable>
+
+        <Pressable
+          onPress={handleShare}
+          style={[
+            styles.shareButton,
+            { backgroundColor: theme.accent },
+            Shadows.fab,
+          ]}
+          testID="button-share"
+        >
+          <Feather name="share" size={24} color="#FFFFFF" />
+        </Pressable>
+      </View>
+
+      {showCopiedToast ? (
+        <Animated.View 
+          entering={FadeIn.duration(200)}
+          style={[
+            styles.toast, 
+            { 
+              backgroundColor: theme.backgroundSecondary,
+              borderColor: theme.border,
+              top: insets.top + 60,
+            }
+          ]}
+        >
+          <Feather name="check-circle" size={18} color={theme.success} />
+          <View style={styles.toastContent}>
+            <ThemedText style={styles.toastTitle}>{t("share.copied")}</ThemedText>
+            <ThemedText style={[styles.toastHint, { color: theme.textSecondary }]}>
+              {t("share.copyHint")}
+            </ThemedText>
+          </View>
+        </Animated.View>
+      ) : null}
     </View>
   );
 }
@@ -323,13 +375,54 @@ const styles = StyleSheet.create({
     padding: Spacing.sm,
     marginLeft: Spacing.xs,
   },
-  shareButton: {
+  fabContainer: {
     position: "absolute",
     right: Spacing.lg,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+  },
+  copyButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    gap: Spacing.sm,
+  },
+  copyButtonText: {
+    ...Typography.small,
+    fontWeight: "600",
+  },
+  shareButton: {
     width: 56,
     height: 56,
     borderRadius: 28,
     alignItems: "center",
     justifyContent: "center",
+  },
+  toast: {
+    position: "absolute",
+    left: Spacing.lg,
+    right: Spacing.lg,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    gap: Spacing.md,
+  },
+  toastContent: {
+    flex: 1,
+  },
+  toastTitle: {
+    ...Typography.small,
+    fontWeight: "600",
+    marginBottom: Spacing.xs,
+  },
+  toastHint: {
+    ...Typography.caption,
+    lineHeight: 18,
   },
 });
