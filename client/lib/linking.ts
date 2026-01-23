@@ -28,12 +28,7 @@ export const linking: LinkingOptions<RootStackParamList> = {
 };
 
 export function createShareLink(id: string): string {
-  const domain = process.env.EXPO_PUBLIC_DOMAIN;
-  if (domain) {
-    const cleanDomain = domain.replace(/:5000$/, '');
-    return `https://${cleanDomain}/recommendation/${id}`;
-  }
-  return `https://reclib.app/recommendation/${id}`;
+  return `reclib://recommendation/${id}`;
 }
 
 export function createWebShareLink(id: string): string {
