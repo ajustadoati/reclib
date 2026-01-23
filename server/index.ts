@@ -266,6 +266,20 @@ function configureExpoAndLanding(app: express.Application) {
     serveSharePage(req, res, req.params.id, appName);
   });
 
+  // Handle shared recommendation links - serve the Expo web app
+  app.get("/shared/:shareId", (req: Request, res: Response) => {
+    const staticIndexPath = path.resolve(process.cwd(), "static-build", "index.html");
+    
+    // In production, serve the static Expo web build
+    if (fs.existsSync(staticIndexPath)) {
+      return res.sendFile(staticIndexPath);
+    }
+    
+    // In development, redirect to Expo dev server
+    const shareId = req.params.shareId;
+    res.redirect(`http://localhost:8081/shared/${shareId}`);
+  });
+
   app.use((req: Request, res: Response, next: NextFunction) => {
     if (req.path.startsWith("/api")) {
       return next();
