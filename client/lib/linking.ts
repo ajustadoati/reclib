@@ -38,7 +38,14 @@ export function createShareLink(shareId: string): string {
 export function createWebShareLink(shareId: string): string {
   try {
     const baseUrl = getApiUrl();
-    return `${baseUrl}shared/${shareId}`;
+    // Remove port from URL for external sharing (port is only for development)
+    const url = new URL(`shared/${shareId}`, baseUrl);
+    // In production, use the clean URL without port
+    // The port is automatically removed when using standard HTTPS (443)
+    if (url.port === "5000") {
+      url.port = "";
+    }
+    return url.href;
   } catch {
     return createShareLink(shareId);
   }
