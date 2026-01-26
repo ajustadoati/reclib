@@ -15,7 +15,7 @@ import { CategoryBadge } from "@/components/CategoryBadge";
 import { PlatformBadge } from "@/components/PlatformBadge";
 import { useTheme } from "@/hooks/useTheme";
 import { useI18n } from "@/lib/i18n";
-import { createShareLink, createWebShareLink } from "@/lib/linking";
+import { createWebShareLink } from "@/lib/linking";
 import { getApiUrl } from "@/lib/query-client";
 import { Spacing, BorderRadius, Typography, Shadows } from "@/constants/theme";
 import { Recommendation, generateSmartLink, Platform, PLATFORM_URLS } from "@/types/recommendation";
@@ -145,13 +145,12 @@ export default function DetailScreen() {
 
       const { shareId } = await response.json();
       
-      const deepLink = RNPlatform.OS === "web" 
-        ? createWebShareLink(shareId)
-        : createShareLink(shareId);
+      const webLink = createWebShareLink(shareId);
       
       const platforms = recommendation.platforms || [];
       const platformInfo = platforms.length > 0 ? ` (${platforms.join(", ")})` : "";
-      const shareText = `${t("share.checkOut")} "${recommendation.title}"${platformInfo}\n\n${t("share.openIn")}: ${deepLink}`;
+      const shareText = `${t("share.checkOut")} "${recommendation.title}"${platformInfo}`;
+      const fullShareText = `${shareText}\n\n${webLink}`;
 
       if (RNPlatform.OS === "web") {
         if (navigator.share) {
@@ -159,19 +158,19 @@ export default function DetailScreen() {
             await navigator.share({
               title: recommendation.title,
               text: shareText,
-              url: deepLink,
+              url: webLink,
             });
           } catch (e) {
             console.log("Share cancelled");
           }
         } else {
-          await navigator.clipboard.writeText(shareText);
+          await navigator.clipboard.writeText(fullShareText);
           alert(t("share.copied"));
         }
       } else {
         try {
           await Share.share({
-            message: shareText,
+            message: fullShareText,
             title: recommendation.title,
           });
         } catch (e) {
