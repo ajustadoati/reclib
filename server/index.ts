@@ -3,6 +3,9 @@ import type { Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import * as fs from "fs";
 import * as path from "path";
+import { eq } from "drizzle-orm";
+import { db } from "./db";
+import { sharedRecommendations } from "@shared/schema";
 
 const app = express();
 const log = console.log;
@@ -266,18 +269,76 @@ function configureExpoAndLanding(app: express.Application) {
     serveSharePage(req, res, req.params.id, appName);
   });
 
-  // Handle shared recommendation links - serve the Expo web app
-  app.get("/shared/:shareId", (req: Request, res: Response) => {
-    const staticIndexPath = path.resolve(process.cwd(), "static-build", "index.html");
+  // Handle shared recommendation links - serve a standalone share page
+  app.get("/shared/:shareId", async (req: Request, res: Response) => {
+    const shareId = req.params.shareId;
     
-    // In production, serve the static Expo web build
+    // First check if we're in development mode
+    if (process.env.NODE_ENV === "development") {
+      return res.redirect(`http://localhost:8081/shared/${shareId}`);
+    }
+    
+    // In production, serve the static Expo web build if it exists
+    const staticIndexPath = path.resolve(process.cwd(), "static-build", "index.html");
     if (fs.existsSync(staticIndexPath)) {
       return res.sendFile(staticIndexPath);
     }
     
-    // In development, redirect to Expo dev server
-    const shareId = req.params.shareId;
-    res.redirect(`http://localhost:8081/shared/${shareId}`);
+    // Fallback: Serve a standalone share page
+    try {
+      const [shared] = await db.select().from(sharedRecommendations).where(eq(sharedRecommendations.id, shareId));
+      if (!shared) {
+        return res.status(404).send(`
+          <!DOCTYPE html>
+          <html><head><title>Not Found - ${appName}</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <style>body{font-family:system-ui;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f5f5f5;}
+          .container{text-align:center;padding:2rem;}</style></head>
+          <body><div class="container"><h1>Recommendation Not Found</h1><p>This link may have expired or doesn't exist.</p></div></body></html>
+        `);
+      }
+      
+      const platformList = shared.platforms?.join(", ") || "";
+      res.send(`
+        <!DOCTYPE html>
+        <html><head>
+          <title>${shared.title} - ${appName}</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <meta property="og:title" content="${shared.title}">
+          <meta property="og:description" content="${shared.category}${platformList ? ` on ${platformList}` : ""}">
+          <style>
+            *{box-sizing:border-box}
+            body{font-family:system-ui,-apple-system,sans-serif;margin:0;background:#fafaf9;color:#1a1a1a;min-height:100vh;display:flex;flex-direction:column}
+            .container{max-width:480px;margin:0 auto;padding:2rem 1.5rem;flex:1}
+            .badge{display:inline-block;background:#f0f0ee;padding:0.25rem 0.75rem;border-radius:100px;font-size:0.875rem;color:#666;margin-bottom:1rem}
+            h1{font-size:1.75rem;font-weight:600;margin:0 0 1rem;line-height:1.3}
+            .platforms{display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:1.5rem}
+            .platform{background:#fff;border:1px solid #e5e5e5;padding:0.5rem 1rem;border-radius:100px;font-size:0.875rem}
+            .notes{background:#fff;border:1px solid #e5e5e5;padding:1rem;border-radius:12px;margin-bottom:1.5rem;line-height:1.6}
+            .notes-label{font-size:0.75rem;text-transform:uppercase;color:#999;margin-bottom:0.5rem}
+            .cta{background:#1a1a1a;color:#fff;padding:1rem 2rem;border-radius:12px;text-decoration:none;display:block;text-align:center;font-weight:500;margin-top:auto}
+            .cta:hover{background:#333}
+            .footer{text-align:center;padding:1rem;color:#999;font-size:0.875rem}
+            .image{width:100%;height:200px;object-fit:cover;border-radius:12px;margin-bottom:1rem}
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            ${shared.imageBase64 ? `<img class="image" src="data:image/jpeg;base64,${shared.imageBase64}" alt="${shared.title}">` : ""}
+            <div class="badge">${shared.category}</div>
+            <h1>${shared.title}</h1>
+            ${platformList ? `<div class="platforms">${shared.platforms?.map((p: string) => `<span class="platform">${p}</span>`).join("")}</div>` : ""}
+            ${shared.notes ? `<div class="notes"><div class="notes-label">Notes</div>${shared.notes}</div>` : ""}
+            <a class="cta" href="reclib://shared/${shareId}">Open in ${appName}</a>
+          </div>
+          <div class="footer">Shared via ${appName}</div>
+        </body>
+        </html>
+      `);
+    } catch (error) {
+      console.error("Error serving share page:", error);
+      res.status(500).send("Error loading shared recommendation");
+    }
   });
 
   app.use((req: Request, res: Response, next: NextFunction) => {
