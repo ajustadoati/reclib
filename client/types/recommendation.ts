@@ -1,4 +1,4 @@
-export type Category = "Books" | "Movies" | "Series" | "TV" | "Music" | "Podcasts" | "Links" | "Other";
+export type Category = "Books" | "Movies" | "Series" | "TV" | "Music" | "Podcasts" | "Links" | "Kids" | "Other";
 
 export type Platform = 
   | "Netflix"
@@ -47,7 +47,7 @@ export interface AIRecognitionResult {
   confidence: number;
 }
 
-export const CATEGORIES: Category[] = ["Books", "Movies", "Series", "TV", "Music", "Podcasts", "Links", "Other"];
+export const CATEGORIES: Category[] = ["Books", "Movies", "Series", "TV", "Music", "Podcasts", "Links", "Kids", "Other"];
 
 export const PLATFORMS: Platform[] = [
   "Netflix",
@@ -84,6 +84,7 @@ export const PLATFORM_BY_CATEGORY: Record<Category, Platform[]> = {
   Music: ["Spotify", "Apple Music", "YouTube", "Other"],
   Podcasts: ["Spotify", "Apple Podcasts", "YouTube", "Other"],
   Links: ["Medium", "Substack", "Reddit", "Twitter", "News", "Blog", "Website", "YouTube", "Other"],
+  Kids: ["Netflix", "Disney+", "Amazon Prime", "YouTube", "Apple TV+", "Paramount+", "Peacock", "Other"],
   Other: ["Other"],
 };
 
@@ -143,6 +144,7 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "category.Music": "Music",
     "category.Podcasts": "Podcasts",
     "category.Links": "Links",
+    "category.Kids": "Kids",
     "category.Other": "Other",
     
     // Platforms
@@ -290,6 +292,7 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "category.Music": "Música",
     "category.Podcasts": "Podcasts",
     "category.Links": "Enlaces",
+    "category.Kids": "Niños",
     "category.Other": "Otro",
     
     // Platforms

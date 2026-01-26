@@ -186,8 +186,11 @@ export const Shadows = {
 export const CategoryColors: Record<string, string> = {
   Books: "#2D5F5D",
   Movies: "#D97757",
+  Series: "#8B5CF6",
   TV: "#7B68C9",
   Music: "#E85D75",
   Podcasts: "#4A90A4",
+  Links: "#3B82F6",
+  Kids: "#F59E0B",
   Other: "#6B6B6B",
 };
