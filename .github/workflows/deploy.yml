@@ -49,13 +49,16 @@ jobs:
           echo "Deploying to VPS..."
 
           # Create deployment directory structure
-          sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USERNAME@$HOST "mkdir -p /var/www/reclib/{static-build,server_dist}"
+          sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USERNAME@$HOST "mkdir -p /var/www/reclib/{static-build,server_dist,server/templates}"
 
           # Deploy static frontend
           sshpass -p "$PASSWORD" scp -o StrictHostKeyChecking=no -r static-build/* $USERNAME@$HOST:/var/www/reclib/static-build/
 
           # Deploy server bundle
           sshpass -p "$PASSWORD" scp -o StrictHostKeyChecking=no server_dist/index.js $USERNAME@$HOST:/var/www/reclib/server_dist/
+
+          # Deploy server templates
+          sshpass -p "$PASSWORD" scp -o StrictHostKeyChecking=no -r server/templates/* $USERNAME@$HOST:/var/www/reclib/server/templates/
 
           # Deploy package.json for production deps info
           sshpass -p "$PASSWORD" scp -o StrictHostKeyChecking=no package.json $USERNAME@$HOST:/var/www/reclib/
