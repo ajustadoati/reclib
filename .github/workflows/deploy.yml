@@ -23,6 +23,8 @@ jobs:
         run: npm ci
 
       - name: Build Expo web (static)
+        env:
+          EXPO_PUBLIC_DOMAIN: https://reclib.com
         run: npm run expo:static:build
 
       - name: Build server
