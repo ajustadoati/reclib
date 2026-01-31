@@ -66,17 +66,10 @@ jobs:
           USERNAME: ${{ secrets.VPS_USERNAME }}
           PASSWORD: ${{ secrets.VPS_PASSWORD }}
         run: |
-          sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USERNAME@$HOST << 'EOF'
-            cd /var/www/reclib
-
-            # Stop existing server if running
-            pm2 stop reclib 2>/dev/null || true
-
-            # Start server with PM2
-            pm2 start server_dist/index.js --name reclib
-
-            # Save PM2 config
-            pm2 save
-
-            echo "Deployment complete!"
+          sshpass -p "$PASSWORD" ssh -T -o StrictHostKeyChecking=no $USERNAME@$HOST << 'EOF'
+          cd /var/www/reclib
+          pm2 stop reclib 2>/dev/null || true
+          pm2 start server_dist/index.js --name reclib
+          pm2 save
+          echo "Deployment complete!"
           EOF
