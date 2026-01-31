@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: reclib-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: reclib
+      POSTGRES_PASSWORD: reclib_local_dev
+      POSTGRES_DB: reclib
+    ports:
+      - "5432:5432"
+    volumes:
+      - reclib_pgdata:/var/lib/postgresql/data
+
+volumes:
+  reclib_pgdata:

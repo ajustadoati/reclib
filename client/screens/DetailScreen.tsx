@@ -6,7 +6,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import * as Haptics from "expo-haptics";
-import * as FileSystem from "expo-file-system";
+import { File as FSFile } from "expo-file-system";
 import Animated, { FadeIn } from "react-native-reanimated";
 
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
@@ -109,10 +109,10 @@ export default function DetailScreen() {
       
       if (recommendation.imageUri && !recommendation.imageUri.startsWith("data:")) {
         try {
-          const base64 = await FileSystem.readAsStringAsync(recommendation.imageUri, {
-            encoding: "base64" as const,
-          });
-          imageBase64 = base64;
+          const file = new FSFile(recommendation.imageUri);
+          if (file.exists) {
+            imageBase64 = await file.base64();
+          }
         } catch (e) {
           console.log("Could not read image for sharing:", e);
         }

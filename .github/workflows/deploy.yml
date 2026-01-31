@@ -1,0 +1,80 @@
+name: Deploy RecLib to VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Expo web (static)
+        run: npm run expo:static:build
+
+      - name: Build server
+        run: npm run server:build
+
+      - name: List build outputs
+        run: |
+          echo "=== Static build ==="
+          ls -la static-build/
+          echo "=== Server build ==="
+          ls -la server_dist/
+
+      - name: Install sshpass
+        run: sudo apt-get install -y sshpass
+
+      - name: Deploy to VPS
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+          USERNAME: ${{ secrets.VPS_USERNAME }}
+          PASSWORD: ${{ secrets.VPS_PASSWORD }}
+        run: |
+          echo "Deploying to VPS..."
+
+          # Create deployment directory structure
+          sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USERNAME@$HOST "mkdir -p /var/www/reclib/{static-build,server_dist}"
+
+          # Deploy static frontend
+          sshpass -p "$PASSWORD" scp -o StrictHostKeyChecking=no -r static-build/* $USERNAME@$HOST:/var/www/reclib/static-build/
+
+          # Deploy server bundle
+          sshpass -p "$PASSWORD" scp -o StrictHostKeyChecking=no server_dist/index.js $USERNAME@$HOST:/var/www/reclib/server_dist/
+
+          # Deploy package.json for production deps info
+          sshpass -p "$PASSWORD" scp -o StrictHostKeyChecking=no package.json $USERNAME@$HOST:/var/www/reclib/
+
+      - name: Restart server on VPS
+        env:
+          HOST: ${{ secrets.VPS_HOST }}
+          USERNAME: ${{ secrets.VPS_USERNAME }}
+          PASSWORD: ${{ secrets.VPS_PASSWORD }}
+        run: |
+          sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USERNAME@$HOST << 'EOF'
+            cd /var/www/reclib
+
+            # Stop existing server if running
+            pm2 stop reclib 2>/dev/null || true
+
+            # Start server with PM2
+            pm2 start server_dist/index.js --name reclib
+
+            # Save PM2 config
+            pm2 save
+
+            echo "Deployment complete!"
+          EOF

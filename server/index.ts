@@ -6,6 +6,8 @@ import * as path from "path";
 import { eq } from "drizzle-orm";
 import { db } from "./db";
 import { sharedRecommendations } from "@shared/schema";
+import 'dotenv/config';
+
 
 const app = express();
 const log = console.log;
@@ -406,6 +408,11 @@ function setupErrorHandler(app: express.Application) {
   setupErrorHandler(app);
 
   const port = parseInt(process.env.PORT || "5000", 10);
+  const isReplit = Boolean(
+  process.env.REPLIT_DEV_DOMAIN || process.env.REPL_ID,
+);
+
+if (isReplit) {
   server.listen(
     {
       port,
@@ -413,7 +420,12 @@ function setupErrorHandler(app: express.Application) {
       reusePort: true,
     },
     () => {
-      log(`express server serving on port ${port}`);
+      log(`express server running on Replit at port ${port}`);
     },
   );
+} else {
+  server.listen(port, "localhost", () => {
+    log(`express server running locally at http://localhost:${port}`);
+  });
+}
 })();

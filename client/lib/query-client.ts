@@ -5,18 +5,20 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
  * @returns {string} The API base URL
  */
 export function getApiUrl(): string {
-  let host = process.env.EXPO_PUBLIC_DOMAIN;
+  const domain = process.env.EXPO_PUBLIC_DOMAIN;
 
-  if (!host) {
+  if (!domain) {
     throw new Error("EXPO_PUBLIC_DOMAIN is not set");
   }
 
-  // Remove port 5000 if present (only used in development)
-  // Production domains don't need port numbers
-  host = host.replace(/:5000$/, "");
+  // If domain already has protocol, use it as-is
+  if (domain.startsWith("http://") || domain.startsWith("https://")) {
+    // Ensure trailing slash
+    return domain.endsWith("/") ? domain : `${domain}/`;
+  }
 
-  const url = new URL(`https://${host}`);
-
+  // For production domains without protocol, use HTTPS
+  const url = new URL(`https://${domain}`);
   return url.href;
 }
 

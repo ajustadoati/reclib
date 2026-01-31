@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Paths, File as FSFile, Directory } from "expo-file-system";
 import { Platform as RNPlatform } from "react-native";
+import * as ImageManipulator from "expo-image-manipulator";
 import { Recommendation, Category, Platform, Language } from "@/types/recommendation";
 
 const STORAGE_KEY = "@recommendation_vault";
@@ -37,16 +38,26 @@ function ensureImagesDirExists(): void {
   }
 }
 
+const MAX_IMAGE_WIDTH = 800;
+const IMAGE_QUALITY = 0.7;
+
 export async function persistImage(tempUri: string): Promise<string> {
   if (RNPlatform.OS === "web") {
     return tempUri;
   }
-  
+
   try {
+    // Redimensionar y comprimir la imagen
+    const manipulated = await ImageManipulator.manipulateAsync(
+      tempUri,
+      [{ resize: { width: MAX_IMAGE_WIDTH } }],
+      { compress: IMAGE_QUALITY, format: ImageManipulator.SaveFormat.JPEG }
+    );
+
     ensureImagesDirExists();
     const filename = `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.jpg`;
     const imagesDir = getImagesDirectory();
-    const sourceFile = new FSFile(tempUri);
+    const sourceFile = new FSFile(manipulated.uri);
     const destFile = new FSFile(imagesDir, filename);
     sourceFile.copy(destFile);
     return destFile.uri;
