@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.reclib.app",
+      "bundleIdentifier": "app.richardroj.reclib",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }

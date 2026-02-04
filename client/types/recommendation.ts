@@ -226,7 +226,14 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "add.field.notes.placeholder": "Why was this recommended? Any thoughts?",
     "add.field.url": "Platform URL (optional)",
     "add.field.url.hint": "Leave empty to auto-generate a search link",
-    
+
+    // AI Scan Limits
+    "ai.scansRemaining": "scans remaining",
+    "ai.freeVersion": "Test version",
+    "ai.limitReached.title": "Scan limit reached",
+    "ai.limitReached.message": "You've used all 3 free AI scans in this version. You can still add recommendations manually.",
+    "ai.scanInfo": "In this Test version, you have {remaining} of {total} AI scans available.",
+
     // Detail
     "detail.title": "Details",
     "detail.openOn": "Open on",
@@ -374,7 +381,14 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "add.field.notes.placeholder": "¿Por qué fue recomendado? ¿Algún comentario?",
     "add.field.url": "URL de Plataforma (opcional)",
     "add.field.url.hint": "Deja vacío para generar un enlace automático",
-    
+
+    // AI Scan Limits
+    "ai.scansRemaining": "escaneos restantes",
+    "ai.freeVersion": "Versión de prueba",
+    "ai.limitReached.title": "Límite de escaneos alcanzado",
+    "ai.limitReached.message": "Has usado los 3 escaneos con IA disponibles en esta versión. Aún puedes agregar recomendaciones manualmente.",
+    "ai.scanInfo": "En esta versión de prueba, tienes {remaining} de {total} escaneos con IA disponibles.",
+
     // Detail
     "detail.title": "Detalles",
     "detail.openOn": "Abrir en",

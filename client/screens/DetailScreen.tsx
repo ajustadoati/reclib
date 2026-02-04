@@ -6,6 +6,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import * as Haptics from "expo-haptics";
+import * as Clipboard from "expo-clipboard";
 import { File as FSFile } from "expo-file-system";
 import Animated, { FadeIn } from "react-native-reanimated";
 
@@ -35,6 +36,7 @@ export default function DetailScreen() {
 
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
   const [isSharing, setIsSharing] = useState(false);
+  const [urlCopied, setUrlCopied] = useState(false);
 
   const loadRecommendation = useCallback(async () => {
     const data = await getRecommendationById(id);
@@ -191,12 +193,20 @@ export default function DetailScreen() {
 
   const handleOpenPlatform = async (platform: Platform) => {
     if (!recommendation) return;
-    const url = PLATFORM_URLS[platform] 
+    const url = PLATFORM_URLS[platform]
       ? generateSmartLink(recommendation.title, platform)
       : recommendation.platformUrl || "";
     if (url) {
       await Linking.openURL(url);
     }
+  };
+
+  const handleCopyUrl = async () => {
+    if (!recommendation?.platformUrl) return;
+    await Clipboard.setStringAsync(recommendation.platformUrl);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setUrlCopied(true);
+    setTimeout(() => setUrlCopied(false), 2000);
   };
 
   if (!recommendation) {
@@ -252,6 +262,39 @@ export default function DetailScreen() {
                     </ThemedText>
                   </Pressable>
                 ))}
+              </View>
+            </View>
+          ) : null}
+
+          {recommendation.platformUrl ? (
+            <View style={styles.section}>
+              <ThemedText style={[styles.sectionLabel, { color: theme.textSecondary }]}>
+                URL
+              </ThemedText>
+              <View style={styles.urlRow}>
+                <ThemedText
+                  style={[styles.urlText, { color: theme.link }]}
+                  numberOfLines={1}
+                  ellipsizeMode="middle"
+                >
+                  {recommendation.platformUrl}
+                </ThemedText>
+                <Pressable
+                  onPress={handleCopyUrl}
+                  style={[
+                    styles.copyUrlButton,
+                    {
+                      backgroundColor: urlCopied ? theme.success : theme.backgroundDefault,
+                      borderColor: urlCopied ? theme.success : theme.border,
+                    },
+                  ]}
+                >
+                  <Feather
+                    name={urlCopied ? "check" : "copy"}
+                    size={16}
+                    color={urlCopied ? "#FFFFFF" : theme.textSecondary}
+                  />
+                </Pressable>
               </View>
             </View>
           ) : null}
@@ -359,6 +402,23 @@ const styles = StyleSheet.create({
   notes: {
     ...Typography.body,
     lineHeight: 26,
+  },
+  urlRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  urlText: {
+    ...Typography.body,
+    flex: 1,
+  },
+  copyUrlButton: {
+    width: 36,
+    height: 36,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
   metaSection: {
     marginTop: Spacing.lg,

@@ -1,465 +1,357 @@
 <!doctype html>
-<html>
+<html lang="es">
   <head>
     <title>APP_NAME_PLACEHOLDER</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Guarda, organiza y comparte recomendaciones en un solo lugar." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap"
+      rel="stylesheet"
+    />
     <style>
+      :root {
+        color-scheme: light;
+        --ink: #12131a;
+        --muted: #5a6072;
+        --surface: #ffffff;
+        --accent: #ff6b4a;
+        --accent-dark: #e04c2b;
+        --mint: #35d4b4;
+        --navy: #121628;
+        --soft: #f3f0eb;
+        --shadow: 0 18px 40px rgba(18, 19, 26, 0.12);
+        --radius: 24px;
+      }
       * {
         box-sizing: border-box;
+        margin: 0;
+        padding: 0;
       }
       body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        margin: 0;
-        padding: 32px 20px;
-        text-align: center;
-        background: #fff;
-        color: #222;
+        font-family: "Space Grotesk", system-ui, -apple-system, sans-serif;
+        background: radial-gradient(circle at top right, #ffe8d8, #f7f5f1 45%, #eef4f2 80%);
+        color: var(--ink);
         line-height: 1.5;
         min-height: 100vh;
       }
-      .wrapper {
-        max-width: 480px;
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      .page {
+        max-width: 1100px;
         margin: 0 auto;
+        padding: 28px 20px 64px;
+      }
+      .hero {
+        display: grid;
+        gap: 28px;
+        grid-template-columns: 1fr;
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 32px;
+        box-shadow: var(--shadow);
+        position: relative;
+        overflow: hidden;
+      }
+      .hero::before {
+        content: "";
+        position: absolute;
+        width: 320px;
+        height: 320px;
+        right: -120px;
+        top: -140px;
+        background: radial-gradient(circle, rgba(53, 212, 180, 0.35), transparent 70%);
+        pointer-events: none;
+      }
+      .hero::after {
+        content: "";
+        position: absolute;
+        width: 260px;
+        height: 260px;
+        left: -120px;
+        bottom: -120px;
+        background: radial-gradient(circle, rgba(255, 107, 74, 0.25), transparent 70%);
+        pointer-events: none;
+      }
+      .hero-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        z-index: 1;
+        position: relative;
+      }
+      .brand {
+        font-size: 16px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--navy);
+      }
+      .pill {
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: rgba(18, 22, 40, 0.08);
+        font-size: 13px;
+        color: var(--navy);
+        font-weight: 500;
+      }
+      .hero-content {
+        z-index: 1;
+        position: relative;
+        display: grid;
+        gap: 18px;
       }
       h1 {
-        font-size: 26px;
-        font-weight: 600;
-        margin: 0;
-        color: #111;
+        font-family: "Fraunces", serif;
+        font-size: 32px;
+        line-height: 1.1;
       }
       .subtitle {
-        font-size: 15px;
-        color: #666;
-        margin-top: 8px;
-        margin-bottom: 32px;
-      }
-      .loading {
-        display: none;
-        margin: 60px 0;
-      }
-      .spinner {
-        border: 2px solid #ddd;
-        border-top-color: #333;
-        border-radius: 50%;
-        width: 32px;
-        height: 32px;
-        animation: spin 0.8s linear infinite;
-        margin: 20px auto;
-      }
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-      .loading-text {
+        color: var(--muted);
         font-size: 16px;
-        color: #444;
+        max-width: 520px;
       }
-      .content {
-        display: block;
-      }
-
-      .steps-container {
+      .cta-row {
         display: flex;
         flex-direction: column;
-        gap: 20px;
+        gap: 12px;
       }
-
-      .step {
-        padding: 24px;
-        border: 1px solid #ddd;
-        border-radius: 12px;
-        text-align: center;
-        background: #fafafa;
-      }
-      .step-header {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        margin-bottom: 12px;
-      }
-      .step-number {
-        width: 28px;
-        height: 28px;
-        border: 1px solid #999;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 600;
-        font-size: 14px;
-        flex-shrink: 0;
-        color: #555;
-      }
-      .step-title {
-        font-size: 18px;
-        font-weight: 600;
-        margin: 0;
-        color: #222;
-      }
-      .step-description {
-        font-size: 14px;
-        margin-bottom: 16px;
-        color: #666;
-      }
-
-      .store-buttons {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        justify-content: center;
-        flex-wrap: wrap;
-      }
-      .store-button {
+      .cta {
         display: inline-flex;
         align-items: center;
         justify-content: center;
         gap: 8px;
-        padding: 12px 20px;
-        font-size: 14px;
-        font-weight: 500;
-        border: 1px solid #ccc;
-        border-radius: 8px;
-        text-decoration: none;
-        color: #333;
+        padding: 14px 18px;
+        border-radius: 14px;
+        font-weight: 600;
+        font-size: 15px;
+        border: 1px solid transparent;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+      .cta-primary {
+        background: var(--accent);
+        color: #fff;
+        box-shadow: 0 12px 24px rgba(255, 107, 74, 0.35);
+      }
+      .cta-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 16px 30px rgba(255, 107, 74, 0.4);
+      }
+      .cta-secondary {
+        border-color: rgba(18, 22, 40, 0.15);
         background: #fff;
-        transition: all 0.15s;
+        color: var(--navy);
       }
-      .store-button:hover {
-        background: #f5f5f5;
-        border-color: #999;
+      .hero-card {
+        background: linear-gradient(150deg, #121628, #1e2550 70%);
+        color: #fff;
+        border-radius: 20px;
+        padding: 22px;
+        display: grid;
+        gap: 16px;
       }
-      .store-link {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        padding: 8px 0;
+      .hero-card h3 {
+        font-size: 18px;
+        font-weight: 600;
+      }
+      .chip-grid {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      }
+      .chip {
+        background: rgba(255, 255, 255, 0.12);
+        border-radius: 12px;
+        padding: 10px 12px;
         font-size: 13px;
-        font-weight: 400;
-        text-decoration: underline;
-        text-underline-offset: 2px;
-        color: #666;
-        background: none;
-        border: none;
-        transition: color 0.15s;
       }
-      .store-link:hover {
-        color: #333;
+      .section {
+        margin-top: 36px;
+        display: grid;
+        gap: 18px;
       }
-      .store-link .store-icon {
-        width: 14px;
-        height: 14px;
+      .section-title {
+        font-family: "Fraunces", serif;
+        font-size: 24px;
       }
-      .store-icon {
-        width: 18px;
-        height: 18px;
+      .features {
+        display: grid;
+        gap: 16px;
       }
-
-      .qr-section {
-        background: #333;
-        color: #fff;
-        border-color: #333;
+      .feature {
+        background: var(--surface);
+        border-radius: 18px;
+        padding: 18px;
+        box-shadow: var(--shadow);
+        display: grid;
+        gap: 8px;
       }
-      .qr-section .step-number {
-        border-color: rgba(255, 255, 255, 0.5);
-        color: #fff;
+      .feature span {
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--accent-dark);
+        font-weight: 600;
       }
-      .qr-section .step-title {
-        color: #fff;
+      .feature h4 {
+        font-size: 18px;
       }
-      .qr-section .step-description {
-        color: rgba(255, 255, 255, 0.7);
-      }
-      .qr-code {
-        width: 180px;
-        height: 180px;
-        margin: 0 auto 16px;
-        background: #fff;
-        border-radius: 8px;
-        padding: 12px;
-      }
-      .qr-code canvas {
-        width: 100%;
-        height: 100%;
-      }
-      .open-button {
-        display: inline-block;
-        padding: 12px 24px;
+      .feature p {
+        color: var(--muted);
         font-size: 14px;
-        font-weight: 500;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        border-radius: 8px;
-        text-decoration: none;
-        color: #333;
-        background: #fff;
-        transition: opacity 0.15s;
       }
-      .open-button:hover {
-        opacity: 0.9;
+      .steps {
+        display: grid;
+        gap: 14px;
+      }
+      .step {
+        background: var(--soft);
+        border-radius: 16px;
+        padding: 16px;
+        display: grid;
+        gap: 6px;
+      }
+      .step strong {
+        font-size: 15px;
+      }
+      .step p {
+        font-size: 14px;
+        color: var(--muted);
+      }
+      .footer {
+        margin-top: 40px;
+        padding: 20px 0 10px;
+        display: grid;
+        gap: 10px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .footer a {
+        text-decoration: underline;
+        text-underline-offset: 3px;
+      }
+      .cta-note {
+        font-size: 13px;
+        color: var(--muted);
       }
 
-      /* Desktop styles */
       @media (min-width: 768px) {
-        body {
-          padding: 48px 32px;
-          display: flex;
+        .hero {
+          grid-template-columns: 1.2fr 0.8fr;
           align-items: center;
-          justify-content: center;
-        }
-        .wrapper {
-          max-width: 720px;
+          padding: 40px;
         }
         h1 {
-          font-size: 32px;
-          margin-bottom: 10px;
+          font-size: 40px;
         }
-        .subtitle {
-          font-size: 16px;
-          margin-bottom: 40px;
-        }
-        .steps-container {
+        .cta-row {
           flex-direction: row;
-          gap: 20px;
-          align-items: stretch;
+          align-items: center;
         }
-        .step {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          padding: 28px;
+        .features {
+          grid-template-columns: repeat(3, 1fr);
         }
-        .step-description {
-          flex-grow: 1;
-        }
-        .store-buttons {
-          flex-direction: column;
-          gap: 10px;
-        }
-        .qr-code {
-          width: 200px;
-          height: 200px;
+        .steps {
+          grid-template-columns: repeat(3, 1fr);
         }
       }
 
-      /* Large desktop */
       @media (min-width: 1024px) {
-        .wrapper {
-          max-width: 800px;
+        .page {
+          padding: 36px 24px 80px;
         }
         h1 {
-          font-size: 36px;
-        }
-        .steps-container {
-          gap: 28px;
-        }
-        .step {
-          padding: 32px;
-        }
-      }
-
-      /* Dark mode */
-      @media (prefers-color-scheme: dark) {
-        body {
-          background: #0d0d0d;
-          color: #e0e0e0;
-        }
-        h1 {
-          color: #f5f5f5;
-        }
-        .subtitle {
-          color: #999;
-        }
-        .spinner {
-          border-color: #444;
-          border-top-color: #ccc;
-        }
-        .loading-text {
-          color: #aaa;
-        }
-        .step {
-          border-color: #333;
-          background: #1a1a1a;
-        }
-        .step-number {
-          border-color: #666;
-          color: #bbb;
-        }
-        .step-title {
-          color: #f0f0f0;
-        }
-        .step-description {
-          color: #888;
-        }
-        .store-button {
-          border-color: #444;
-          color: #e0e0e0;
-          background: #222;
-        }
-        .store-button:hover {
-          background: #2a2a2a;
-          border-color: #666;
-        }
-        .store-link {
-          color: #888;
-        }
-        .store-link:hover {
-          color: #ccc;
-        }
-        .qr-section {
-          background: #111;
-          border-color: #333;
-        }
-        .qr-section .step-number {
-          border-color: rgba(255, 255, 255, 0.4);
-        }
-        .qr-section .step-description {
-          color: rgba(255, 255, 255, 0.6);
-        }
-        .open-button {
-          background: #f0f0f0;
-          color: #111;
-        }
-        .open-button:hover {
-          background: #e0e0e0;
+          font-size: 46px;
         }
       }
     </style>
   </head>
   <body>
-    <div class="wrapper">
-      <div class="loading" id="loading">
-        <div class="spinner"></div>
-        <div class="loading-text">Opening in Expo Go...</div>
-      </div>
-
-      <div class="content" id="content">
-        <h1>APP_NAME_PLACEHOLDER</h1>
-        <p class="subtitle">Preview this app on your phone</p>
-
-        <div class="steps-container">
-          <div class="step">
-            <div class="step-header">
-              <div class="step-number">1</div>
-              <h2 class="step-title">Download Expo Go</h2>
-            </div>
-            <p class="step-description">
-              Expo Go is a free app to test mobile apps
-            </p>
-            <div class="store-buttons" id="store-buttons">
-              <a
-                id="app-store-btn"
-                href="https://apps.apple.com/app/id982107779"
-                class="store-button"
-                target="_blank"
-              >
-                <svg class="store-icon" viewBox="0 0 24 24" fill="currentColor">
-                  <path
-                    d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"
-                  />
-                </svg>
-                App Store
-              </a>
-              <a
-                id="play-store-btn"
-                href="https://play.google.com/store/apps/details?id=host.exp.exponent"
-                class="store-button"
-                target="_blank"
-              >
-                <svg class="store-icon" viewBox="0 0 24 24" fill="currentColor">
-                  <path
-                    d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.6 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.53,12.9 20.18,13.18L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z"
-                  />
-                </svg>
-                Google Play
-              </a>
-            </div>
+    <main class="page">
+      <section class="hero">
+        <div class="hero-content">
+          <div class="hero-top">
+            <div class="brand">APP_NAME_PLACEHOLDER</div>
+            <div class="pill">Primera versión en camino</div>
           </div>
-
-          <div class="step qr-section">
-            <div class="step-header">
-              <div class="step-number">2</div>
-              <h2 class="step-title">Scan QR Code</h2>
-            </div>
-            <p class="step-description">Use your phone's camera or Expo Go</p>
-            <div class="qr-code" id="qr-code"></div>
-            <a href="exps://EXPS_URL_PLACEHOLDER" class="open-button"
-              >Open in Expo Go</a
-            >
+          <h1>Tu biblioteca viva de recomendaciones.</h1>
+          <p class="subtitle">
+            Guarda libros, películas, series, podcasts, lugares, productos o lo que
+            te recomienden. La IA captura la recomendación y genera el enlace de la
+            plataforma adecuada en segundos.
+          </p>
+          <div class="cta-note">
+            Comparte recomendaciones con un solo enlace y recupéralas cuando lo necesites.
           </div>
         </div>
-      </div>
-    </div>
+        <div class="hero-card">
+          <h3>¿Qué puedes guardar?</h3>
+          <div class="chip-grid">
+            <div class="chip">Libros</div>
+            <div class="chip">Películas</div>
+            <div class="chip">Series</div>
+            <div class="chip">Podcasts</div>
+            <div class="chip">Lugares</div>
+            <div class="chip">Productos</div>
+          </div>
+          <p class="subtitle" style="color: rgba(255,255,255,0.72); font-size: 14px;">
+            Añade notas rápidas, etiquetas y enlaces directos a donde ver o comprar.
+          </p>
+        </div>
+      </section>
 
-    <script src="https://unpkg.com/qr-code-styling@1.6.0/lib/qr-code-styling.js"></script>
-    <script>
-      (function () {
-        const ua = navigator.userAgent;
-        const loadingEl = document.getElementById("loading");
-        const contentEl = document.getElementById("content");
+      <section class="section" id="como-funciona">
+        <h2 class="section-title">Cómo funciona</h2>
+        <div class="steps">
+          <div class="step">
+            <strong>1. Captura al instante</strong>
+            <p>Guarda una recomendación en segundos con texto o foto.</p>
+          </div>
+          <div class="step">
+            <strong>2. Organiza a tu manera</strong>
+            <p>Usa colecciones, etiquetas y filtros para encontrar todo rápido.</p>
+          </div>
+          <div class="step">
+            <strong>3. Comparte al instante</strong>
+            <p>Genera un enlace compartible para recomendar a quien quieras.</p>
+          </div>
+        </div>
+      </section>
 
-        const isAndroid = /Android/i.test(ua);
-        const isIOS =
-          /iPhone|iPad|iPod/i.test(ua) ||
-          (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      <section class="section">
+        <h2 class="section-title">Por qué RecLib</h2>
+        <div class="features">
+          <div class="feature">
+            <span>Todo junto</span>
+            <h4>Centraliza tus recomendaciones</h4>
+            <p>Evita las capturas perdidas, notas sueltas o mensajes olvidados.</p>
+          </div>
+          <div class="feature">
+            <span>Contexto</span>
+            <h4>Guarda quién te lo recomendó</h4>
+            <p>Incluye notas, enlaces y detalles para recordar el por qué.</p>
+          </div>
+          <div class="feature">
+            <span>IA al rescate</span>
+            <h4>Enlace directo a la plataforma</h4>
+            <p>La IA detecta el contenido y te lleva al lugar correcto.</p>
+          </div>
+        </div>
+      </section>
 
-        const deepLink = "exps://EXPS_URL_PLACEHOLDER";
-
-        // Adjust store buttons based on platform
-        const appStoreBtn = document.getElementById("app-store-btn");
-        const playStoreBtn = document.getElementById("play-store-btn");
-        const storeButtonsContainer = document.getElementById("store-buttons");
-
-        if (isIOS) {
-          playStoreBtn.className = "store-link";
-          storeButtonsContainer.appendChild(playStoreBtn);
-        } else if (isAndroid) {
-          appStoreBtn.className = "store-link";
-          storeButtonsContainer.insertBefore(playStoreBtn, appStoreBtn);
-        }
-
-        const qrCode = new QRCodeStyling({
-          width: 400,
-          height: 400,
-          data: deepLink,
-          image: "assets/images/icon.png",
-          dotsOptions: {
-            color: "#333333",
-            type: "rounded",
-          },
-          backgroundOptions: {
-            color: "#ffffff",
-          },
-          imageOptions: {
-            crossOrigin: "anonymous",
-            margin: 6,
-            imageSize: 0.35,
-          },
-          cornersSquareOptions: {
-            type: "extra-rounded",
-          },
-          cornersDotOptions: {
-            type: "dot",
-          },
-          qrOptions: {
-            errorCorrectionLevel: "H",
-          },
-        });
-
-        qrCode.append(document.getElementById("qr-code"));
-
-        if (isAndroid || isIOS) {
-          loadingEl.style.display = "block";
-          contentEl.style.display = "none";
-          window.location.href = deepLink;
-          setTimeout(function () {
-            loadingEl.style.display = "none";
-            contentEl.style.display = "block";
-          }, 500);
-        }
-      })();
-    </script>
+      <footer class="footer">
+        <div>APP_NAME_PLACEHOLDER · Guardar recomendaciones sin fricción.</div>
+        <div>
+          <a href="#">Privacidad</a> ·
+          <a href="#">Términos</a>
+        </div>
+      </footer>
+    </main>
   </body>
 </html>

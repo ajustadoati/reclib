@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Platform as RNPlatform,
   ScrollView,
+  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
@@ -15,6 +16,7 @@ import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
+import * as Clipboard from "expo-clipboard";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
@@ -40,6 +42,7 @@ import {
 } from "@/lib/storage";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
+import { getRemainingScanCount, incrementScanCount, getScanLimit } from "@/lib/ai-usage";
 
 import successScanImage from "../assets/images/success-scan.png";
 
@@ -64,12 +67,23 @@ export default function AddRecommendationScreen() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [aiResult, setAiResult] = useState<AIRecognitionResult | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [urlCopied, setUrlCopied] = useState(false);
+  const [remainingScans, setRemainingScans] = useState<number>(getScanLimit());
+
+  useEffect(() => {
+    loadRemainingScans();
+  }, []);
 
   useEffect(() => {
     if (editId) {
       loadExistingRecommendation();
     }
   }, [editId]);
+
+  const loadRemainingScans = async () => {
+    const remaining = await getRemainingScanCount();
+    setRemainingScans(remaining);
+  };
 
   const loadExistingRecommendation = async () => {
     if (!editId) return;
@@ -88,6 +102,16 @@ export default function AddRecommendationScreen() {
   const handleCategoryChange = (newCategory: Category) => {
     setCategory(newCategory);
     setPlatforms([getDefaultPlatform(newCategory)]);
+  };
+
+  const handleCopyUrl = async () => {
+    const url = platformUrl.trim() || generateSmartLink(title.trim(), platforms[0]);
+    if (url) {
+      await Clipboard.setStringAsync(url);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setUrlCopied(true);
+      setTimeout(() => setUrlCopied(false), 2000);
+    }
   };
 
   const togglePlatform = (platform: Platform) => {
@@ -159,7 +183,20 @@ export default function AddRecommendationScreen() {
     });
   }, [navigation, mode, title, category, platforms, notes, platformUrl, imageUri, isSaving, theme, editId, t]);
 
+  const showLimitReachedAlert = () => {
+    if (RNPlatform.OS === "web") {
+      alert(t("ai.limitReached.message"));
+    } else {
+      Alert.alert(t("ai.limitReached.title"), t("ai.limitReached.message"));
+    }
+  };
+
   const handlePickImage = async () => {
+    if (remainingScans <= 0) {
+      showLimitReachedAlert();
+      return;
+    }
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       quality: 0.8,
@@ -176,6 +213,11 @@ export default function AddRecommendationScreen() {
   };
 
   const handleTakePhoto = async () => {
+    if (remainingScans <= 0) {
+      showLimitReachedAlert();
+      return;
+    }
+
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== "granted") {
       if (RNPlatform.OS === "web") {
@@ -208,6 +250,10 @@ export default function AddRecommendationScreen() {
         body: JSON.stringify({ image: base64 }),
       });
 
+      // Decrement scan count after API call (regardless of result)
+      const newRemaining = await incrementScanCount();
+      setRemainingScans(newRemaining);
+
       if (response.ok) {
         const result: AIRecognitionResult = await response.json();
         setAiResult(result);
@@ -238,15 +284,41 @@ export default function AddRecommendationScreen() {
 
   const availablePlatforms = PLATFORM_BY_CATEGORY[category] || [];
 
+  const scanDisabled = remainingScans <= 0;
+  const scanLimit = getScanLimit();
+
   const renderChooseMode = () => (
     <Animated.View entering={FadeIn.duration(300)} style={styles.chooseContainer}>
       <ThemedText style={styles.chooseTitle}>
         {t("add.choose.title")}
       </ThemedText>
 
+      {/* AI Scans Info Banner */}
+      <View style={[styles.scanInfoBanner, { backgroundColor: scanDisabled ? `${theme.error}15` : `${theme.link}15`, borderColor: scanDisabled ? theme.error : theme.link }]}>
+        <Feather name={scanDisabled ? "alert-circle" : "zap"} size={18} color={scanDisabled ? theme.error : theme.link} />
+        <View style={styles.scanInfoContent}>
+          <ThemedText style={[styles.scanInfoTitle, { color: scanDisabled ? theme.error : theme.link }]}>
+            {t("ai.freeVersion")}: {remainingScans}/{scanLimit} {t("ai.scansRemaining")}
+          </ThemedText>
+          {scanDisabled ? (
+            <ThemedText style={[styles.scanInfoText, { color: theme.textSecondary }]}>
+              {t("ai.limitReached.message")}
+            </ThemedText>
+          ) : null}
+        </View>
+      </View>
+
       <Pressable
         onPress={handlePickImage}
-        style={[styles.optionButton, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}
+        disabled={scanDisabled}
+        style={[
+          styles.optionButton,
+          {
+            backgroundColor: theme.backgroundDefault,
+            borderColor: theme.border,
+            opacity: scanDisabled ? 0.5 : 1,
+          },
+        ]}
         testID="button-scan-image"
       >
         <View style={[styles.optionIcon, { backgroundColor: `${theme.link}15` }]}>
@@ -281,7 +353,15 @@ export default function AddRecommendationScreen() {
       {RNPlatform.OS !== "web" ? (
         <Pressable
           onPress={handleTakePhoto}
-          style={[styles.optionButton, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}
+          disabled={scanDisabled}
+          style={[
+            styles.optionButton,
+            {
+              backgroundColor: theme.backgroundDefault,
+              borderColor: theme.border,
+              opacity: scanDisabled ? 0.5 : 1,
+            },
+          ]}
           testID="button-take-photo"
         >
           <View style={[styles.optionIcon, { backgroundColor: `${theme.success}15` }]}>
@@ -462,20 +542,41 @@ export default function AddRecommendationScreen() {
         <ThemedText style={[styles.label, { color: theme.textSecondary }]}>
           {t("add.field.url")}
         </ThemedText>
-        <TextInput
-          style={[
-            styles.input,
-            { backgroundColor: theme.backgroundDefault, borderColor: theme.border, color: theme.text },
-          ]}
-          value={platformUrl}
-          onChangeText={setPlatformUrl}
-          placeholder="https://..."
-          placeholderTextColor={theme.textTertiary}
-          keyboardType="url"
-          autoCapitalize="none"
-          autoCorrect={false}
-          testID="input-url"
-        />
+        <View style={styles.urlInputRow}>
+          <TextInput
+            style={[
+              styles.input,
+              styles.urlInput,
+              { backgroundColor: theme.backgroundDefault, borderColor: theme.border, color: theme.text },
+            ]}
+            value={platformUrl}
+            onChangeText={setPlatformUrl}
+            placeholder="https://..."
+            placeholderTextColor={theme.textTertiary}
+            keyboardType="url"
+            autoCapitalize="none"
+            autoCorrect={false}
+            testID="input-url"
+          />
+          <Pressable
+            onPress={handleCopyUrl}
+            disabled={!title.trim() && !platformUrl.trim()}
+            style={[
+              styles.copyUrlButton,
+              {
+                backgroundColor: urlCopied ? theme.success : theme.backgroundDefault,
+                borderColor: urlCopied ? theme.success : theme.border,
+                opacity: !title.trim() && !platformUrl.trim() ? 0.5 : 1,
+              },
+            ]}
+          >
+            <Feather
+              name={urlCopied ? "check" : "copy"}
+              size={20}
+              color={urlCopied ? "#FFFFFF" : theme.textSecondary}
+            />
+          </Pressable>
+        </View>
         <ThemedText style={[styles.hint, { color: theme.textTertiary }]}>
           {t("add.field.url.hint")}
         </ThemedText>
@@ -522,8 +623,28 @@ const styles = StyleSheet.create({
   },
   chooseTitle: {
     ...Typography.title,
-    marginBottom: Spacing["2xl"],
+    marginBottom: Spacing.lg,
     textAlign: "center",
+  },
+  scanInfoBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    marginBottom: Spacing.xl,
+    gap: Spacing.sm,
+  },
+  scanInfoContent: {
+    flex: 1,
+  },
+  scanInfoTitle: {
+    ...Typography.small,
+    fontWeight: "600",
+  },
+  scanInfoText: {
+    ...Typography.caption,
+    marginTop: Spacing.xs,
   },
   optionButton: {
     flexDirection: "row",
@@ -628,6 +749,22 @@ const styles = StyleSheet.create({
     height: 120,
     paddingTop: Spacing.md,
     paddingBottom: Spacing.md,
+  },
+  urlInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  urlInput: {
+    flex: 1,
+  },
+  copyUrlButton: {
+    width: Spacing.inputHeight,
+    height: Spacing.inputHeight,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
   },
   hint: {
     ...Typography.caption,
