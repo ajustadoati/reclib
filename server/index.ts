@@ -277,6 +277,13 @@ function configureExpoAndLanding(app: express.Application) {
     "privacy.html",
   );
   const privacyPageTemplate = fs.readFileSync(privacyTemplatePath, "utf-8");
+  const termsTemplatePath = path.resolve(
+    process.cwd(),
+    "server",
+    "templates",
+    "terms.html",
+  );
+  const termsPageTemplate = fs.readFileSync(termsTemplatePath, "utf-8");
   const appName = getAppName();
 
   log("Serving static Expo files with dynamic manifest routing");
@@ -290,6 +297,12 @@ function configureExpoAndLanding(app: express.Application) {
       /APP_NAME_PLACEHOLDER/g,
       appName,
     );
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.status(200).send(html);
+  });
+
+  app.get("/terms", (_req: Request, res: Response) => {
+    const html = termsPageTemplate.replace(/APP_NAME_PLACEHOLDER/g, appName);
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.status(200).send(html);
   });

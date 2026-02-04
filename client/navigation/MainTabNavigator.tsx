@@ -4,7 +4,7 @@ import { Feather } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { Platform, StyleSheet } from "react-native";
 
-import LibraryScreen, { LibraryHeaderLeft, LibraryHeaderRight } from "@/screens/LibraryScreen";
+import LibraryScreen, { LibraryHeaderLeft } from "@/screens/LibraryScreen";
 import CategoriesScreen from "@/screens/CategoriesScreen";
 import { HeaderTitle } from "@/components/HeaderTitle";
 import { useTheme } from "@/hooks/useTheme";
@@ -63,7 +63,6 @@ export default function MainTabNavigator() {
         options={{
           headerTitle: () => <HeaderTitle title="RecLib" />,
           headerLeft: () => <LibraryHeaderLeft />,
-          headerRight: () => <LibraryHeaderRight />,
           tabBarLabel: t("nav.library"),
           tabBarIcon: ({ color, size }) => (
             <Feather name="book-open" size={size} color={color} />

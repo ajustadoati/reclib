@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { StyleSheet, View, FlatList, RefreshControl, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -17,7 +17,7 @@ import { FloatingAddButton } from "@/components/FloatingAddButton";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing } from "@/constants/theme";
 import { Recommendation } from "@/types/recommendation";
-import { getAllRecommendations, searchRecommendations, deleteRecommendation } from "@/lib/storage";
+import { getAllRecommendations, searchRecommendations, deleteRecommendation, getSettings } from "@/lib/storage";
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -38,15 +38,59 @@ export default function LibraryScreen() {
 
   const loadRecommendations = useCallback(async () => {
     const data = await getAllRecommendations();
-    setRecommendations(data);
-    setFilteredRecommendations(data);
+    const settings = await getSettings();
+
+    // Apply sorting based on settings
+    const sortedData = [...data].sort((a, b) => {
+      switch (settings.sortOrder) {
+        case "alphabetical":
+          return a.title.localeCompare(b.title);
+        case "category":
+          const catCompare = a.category.localeCompare(b.category);
+          if (catCompare !== 0) return catCompare;
+          return b.createdAt - a.createdAt; // Within same category, sort by recent
+        case "recent":
+        default:
+          return b.createdAt - a.createdAt;
+      }
+    });
+
+    setRecommendations(sortedData);
+    setFilteredRecommendations(sortedData);
     setIsLoading(false);
   }, []);
+
+  const handleToggleSearch = useCallback(() => {
+    setShowSearch((prev) => {
+      if (prev) {
+        // Closing search - clear query
+        setSearchQuery("");
+        loadRecommendations();
+      }
+      return !prev;
+    });
+  }, [loadRecommendations]);
 
   useFocusEffect(
     useCallback(() => {
       loadRecommendations();
     }, [loadRecommendations])
+  );
+
+  // Update header with search toggle
+  useFocusEffect(
+    useCallback(() => {
+      navigation.setOptions({
+        headerRight: () => (
+          <Pressable
+            onPress={handleToggleSearch}
+            style={styles.headerButton}
+          >
+            <Feather name={showSearch ? "x" : "search"} size={22} color={theme.text} />
+          </Pressable>
+        ),
+      });
+    }, [navigation, showSearch, theme.text, handleToggleSearch])
   );
 
   const handleRefresh = async () => {
@@ -147,20 +191,6 @@ export default function LibraryScreen() {
         bottom={tabBarHeight + Spacing.lg}
       />
     </View>
-  );
-}
-
-export function LibraryHeaderRight() {
-  const { theme } = useTheme();
-  const [showSearch, setShowSearch] = useState(false);
-
-  return (
-    <Pressable
-      onPress={() => setShowSearch(!showSearch)}
-      style={styles.headerButton}
-    >
-      <Feather name="search" size={22} color={theme.text} />
-    </Pressable>
   );
 }
 

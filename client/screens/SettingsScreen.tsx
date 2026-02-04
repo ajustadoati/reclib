@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { StyleSheet, View, TextInput, Pressable } from "react-native";
+import React, { useState, useCallback } from "react";
+import { StyleSheet, View, TextInput, Pressable, Linking } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
@@ -75,6 +75,14 @@ export default function SettingsScreen() {
     setLanguage(lang);
     setSettings((prev) => ({ ...prev, language: lang }));
     await updateSettings({ language: lang });
+  };
+
+  const handleOpenPrivacy = () => {
+    Linking.openURL("https://reclib.com/privacy");
+  };
+
+  const handleOpenTerms = () => {
+    Linking.openURL("https://reclib.com/terms");
   };
 
   return (
@@ -255,14 +263,14 @@ export default function SettingsScreen() {
 
               <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
-              <Pressable style={styles.aboutRow}>
+              <Pressable style={styles.aboutRow} onPress={handleOpenPrivacy}>
                 <ThemedText style={styles.aboutLabel}>{t("settings.privacy")}</ThemedText>
                 <Feather name="external-link" size={16} color={theme.textTertiary} />
               </Pressable>
 
               <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
-              <Pressable style={styles.aboutRow}>
+              <Pressable style={styles.aboutRow} onPress={handleOpenTerms}>
                 <ThemedText style={styles.aboutLabel}>{t("settings.terms")}</ThemedText>
                 <Feather name="external-link" size={16} color={theme.textTertiary} />
               </Pressable>
