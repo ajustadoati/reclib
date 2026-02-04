@@ -111,14 +111,7 @@ function setupRequestLogging(app: express.Application) {
 }
 
 function getAppName(): string {
-  try {
-    const appJsonPath = path.resolve(process.cwd(), "app.json");
-    const appJsonContent = fs.readFileSync(appJsonPath, "utf-8");
-    const appJson = JSON.parse(appJsonContent);
-    return appJson.expo?.name || "App Landing Page";
-  } catch {
-    return "App Landing Page";
-  }
+  return "RecLib";
 }
 
 function serveExpoManifest(platform: string, res: Response) {
