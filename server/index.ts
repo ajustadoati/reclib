@@ -270,12 +270,28 @@ function configureExpoAndLanding(app: express.Application) {
     "landing-page.html",
   );
   const landingPageTemplate = fs.readFileSync(templatePath, "utf-8");
+  const privacyTemplatePath = path.resolve(
+    process.cwd(),
+    "server",
+    "templates",
+    "privacy.html",
+  );
+  const privacyPageTemplate = fs.readFileSync(privacyTemplatePath, "utf-8");
   const appName = getAppName();
 
   log("Serving static Expo files with dynamic manifest routing");
 
   app.get("/recommendation/:id", (req: Request, res: Response) => {
     serveSharePage(req, res, req.params.id, appName);
+  });
+
+  app.get("/privacy", (_req: Request, res: Response) => {
+    const html = privacyPageTemplate.replace(
+      /APP_NAME_PLACEHOLDER/g,
+      appName,
+    );
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.status(200).send(html);
   });
 
   // Handle shared recommendation links - serve a standalone share page
