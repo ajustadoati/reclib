@@ -7,13 +7,20 @@ import SettingsScreen from "@/screens/SettingsScreen";
 import CategoryListScreen from "@/screens/CategoryListScreen";
 import ImportSharedScreen from "@/screens/ImportSharedScreen";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
-import { Category } from "@/types/recommendation";
+import { Category, Platform } from "@/types/recommendation";
+
+export type SharedData = {
+  url?: string;
+  title?: string;
+  category?: Category;
+  platform?: Platform;
+};
 
 export type RootStackParamList = {
   Main: undefined;
   Detail: { id: string };
   ImportShared: { shareId: string };
-  AddRecommendation: { editId?: string } | undefined;
+  AddRecommendation: { editId?: string; sharedData?: SharedData } | undefined;
   Settings: undefined;
   CategoryList: { category: Category };
 };

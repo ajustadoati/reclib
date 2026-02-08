@@ -7,6 +7,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import * as Linking from "expo-linking";
+import { ShareIntentProvider } from "expo-share-intent";
 import {
   useFonts,
   Inter_400Regular,
@@ -21,6 +22,7 @@ import { I18nProvider } from "@/lib/i18n";
 import { linking } from "@/lib/linking";
 
 import RootStackNavigator from "@/navigation/RootStackNavigator";
+import { ShareIntentHandler } from "@/components/ShareIntentHandler";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 SplashScreen.preventAutoHideAsync();
@@ -63,20 +65,23 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <I18nProvider>
-        <QueryClientProvider client={queryClient}>
-          <SafeAreaProvider>
-            <GestureHandlerRootView style={styles.root}>
-              <KeyboardProvider>
-                <NavigationContainer linking={linking}>
-                  <RootStackNavigator />
-                </NavigationContainer>
-                <StatusBar style="auto" />
-              </KeyboardProvider>
-            </GestureHandlerRootView>
-          </SafeAreaProvider>
-        </QueryClientProvider>
-      </I18nProvider>
+      <ShareIntentProvider>
+        <I18nProvider>
+          <QueryClientProvider client={queryClient}>
+            <SafeAreaProvider>
+              <GestureHandlerRootView style={styles.root}>
+                <KeyboardProvider>
+                  <NavigationContainer linking={linking}>
+                    <ShareIntentHandler />
+                    <RootStackNavigator />
+                  </NavigationContainer>
+                  <StatusBar style="auto" />
+                </KeyboardProvider>
+              </GestureHandlerRootView>
+            </SafeAreaProvider>
+          </QueryClientProvider>
+        </I18nProvider>
+      </ShareIntentProvider>
     </ErrorBoundary>
   );
 }

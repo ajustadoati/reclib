@@ -248,7 +248,7 @@ export default function SettingsScreen() {
               <View style={styles.aboutRow}>
                 <ThemedText style={styles.aboutLabel}>{t("settings.version")}</ThemedText>
                 <ThemedText style={[styles.aboutValue, { color: theme.textSecondary }]}>
-                  1.0.0
+                  1.1.0
                 </ThemedText>
               </View>
 

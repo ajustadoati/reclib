@@ -207,6 +207,7 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     
     // Add Recommendation
     "add.title": "Add Recommendation",
+    "add.shared.title": "Save Shared Link",
     "add.edit.title": "Edit Recommendation",
     "add.choose.title": "How would you like to add?",
     "add.scan.title": "Scan Image",
@@ -362,6 +363,7 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     
     // Add Recommendation
     "add.title": "Agregar Recomendación",
+    "add.shared.title": "Guardar Enlace Compartido",
     "add.edit.title": "Editar Recomendación",
     "add.choose.title": "¿Cómo quieres agregar?",
     "add.scan.title": "Escanear Imagen",

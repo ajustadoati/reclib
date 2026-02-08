@@ -2,7 +2,7 @@
   "expo": {
     "name": "RecLib",
     "slug": "reclib",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "reclib",
@@ -58,6 +58,17 @@
         "expo-image-picker",
         {
           "photosPermission": "Allow RecLib to access your photos to capture recommendations from images."
+        }
+      ],
+      [
+        "expo-share-intent",
+        {
+          "iosActivationRules": {
+            "NSExtensionActivationSupportsWebURLWithMaxCount": 1,
+            "NSExtensionActivationSupportsText": true
+          },
+          "androidIntentFilters": ["text/*"],
+          "androidMultiIntentFilters": ["text/*"]
         }
       ]
     ],

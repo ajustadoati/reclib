@@ -56,8 +56,9 @@ export default function AddRecommendationScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteType>();
   const editId = route.params?.editId;
+  const sharedData = route.params?.sharedData;
 
-  const [mode, setMode] = useState<"choose" | "scan" | "manual">("choose");
+  const [mode, setMode] = useState<"choose" | "scan" | "manual">(sharedData ? "manual" : "choose");
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<Category>("Books");
   const [platforms, setPlatforms] = useState<Platform[]>([getDefaultPlatform("Books")]);
@@ -79,6 +80,27 @@ export default function AddRecommendationScreen() {
       loadExistingRecommendation();
     }
   }, [editId]);
+
+  // Handle shared data from share intent
+  useEffect(() => {
+    if (sharedData) {
+      if (sharedData.title) {
+        setTitle(sharedData.title);
+      }
+      if (sharedData.category) {
+        setCategory(sharedData.category);
+        if (sharedData.platform) {
+          setPlatforms([sharedData.platform]);
+        } else {
+          setPlatforms([getDefaultPlatform(sharedData.category)]);
+        }
+      }
+      if (sharedData.url) {
+        setPlatformUrl(sharedData.url);
+      }
+      setMode("manual");
+    }
+  }, [sharedData]);
 
   const loadRemainingScans = async () => {
     const remaining = await getRemainingScanCount();
@@ -157,8 +179,14 @@ export default function AddRecommendationScreen() {
   };
 
   useEffect(() => {
+    const getHeaderTitle = () => {
+      if (editId) return t("add.edit.title");
+      if (sharedData) return t("add.shared.title");
+      return t("add.title");
+    };
+
     navigation.setOptions({
-      headerTitle: editId ? t("add.edit.title") : t("add.title"),
+      headerTitle: getHeaderTitle(),
       headerRight: () =>
         mode !== "choose" ? (
           <Pressable
@@ -181,7 +209,7 @@ export default function AddRecommendationScreen() {
           </Pressable>
         ) : null,
     });
-  }, [navigation, mode, title, category, platforms, notes, platformUrl, imageUri, isSaving, theme, editId, t]);
+  }, [navigation, mode, title, category, platforms, notes, platformUrl, imageUri, isSaving, theme, editId, sharedData, t]);
 
   const showLimitReachedAlert = () => {
     if (RNPlatform.OS === "web") {
