@@ -302,6 +302,7 @@ export default function AddRecommendationScreen() {
               title: parsedOCR.title,
               category: detectedCategory,
               platform: parsedOCR.platform,
+              confidence: parsedOCR.confidence,
             });
             setTitle(parsedOCR.title);
             setCategory(detectedCategory);
