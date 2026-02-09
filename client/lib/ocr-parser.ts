@@ -100,15 +100,19 @@ function extractPotentialTitle(text: string): string | undefined {
     // Skip if either line is a non-title
     if (isCommonNonTitle(current) || isCommonNonTitle(next)) continue;
 
-    // If current line is short and next line starts with lowercase or "del/de/the/of"
-    // they likely form a single title
-    if (current.length >= 2 && current.length <= 25 &&
-        next.length >= 2 && next.length <= 25) {
-      const nextLower = next.toLowerCase();
-      const startsWithConnector = /^(del|de|the|of|and|y|i|e|a|en|in|un|una|el|la|los|las)\s/i.test(next);
-      const startsLowercase = next[0] === next[0].toLowerCase() && /^[a-záéíóúàèìòùñç]/i.test(next);
+    // Skip if current line looks like a single-word name (author)
+    // Names are usually single capitalized words without articles
+    const isSingleWord = current.split(/\s+/).length === 1;
+    const looksLikeName = isSingleWord && /^[A-ZÁÉÍÓÚÀÈÌÒÙÑÇ][a-záéíóúàèìòùñç]+$/.test(current);
+    if (looksLikeName) continue;
 
-      if (startsWithConnector || startsLowercase) {
+    // If next line starts with article/connector that continues the title
+    // (e.g., "La plaça" + "del Diamant")
+    if (current.length >= 2 && current.length <= 30 &&
+        next.length >= 2 && next.length <= 30) {
+      const startsWithConnector = /^(del|de la|de les|de los|de|the|of|and|y|i|e)\s/i.test(next);
+
+      if (startsWithConnector) {
         const combined = `${current} ${next}`;
         if (combined.length <= 80 && !isCommonNonTitle(combined)) {
           return combined;
