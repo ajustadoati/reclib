@@ -85,53 +85,64 @@ function extractPotentialTitle(text: string): string | undefined {
 
   if (cleanedLines.length === 0) return undefined;
 
-  // Strategy 1: Find the longest meaningful line (often the title)
-  const meaningfulLines = cleanedLines
-    .filter(l => l.length >= 3 && l.length <= 100 && !isCommonNonTitle(l))
-    .sort((a, b) => b.length - a.length);
+  // Filter out non-title lines (credits, subtitles, etc.)
+  const validLines = cleanedLines.filter(l =>
+    l.length >= 2 && l.length <= 100 && !isCommonNonTitle(l)
+  );
 
-  if (meaningfulLines.length > 0) {
-    // Return the longest line that looks like a title
-    return meaningfulLines[0];
-  }
-
-  // Strategy 2: Try to combine consecutive short lines that might form a title
+  // Strategy 1: Try to combine consecutive short lines that might form a title
+  // This is common for book covers where title spans multiple lines
   // (e.g., "La plaça" + "del Diamant" = "La plaça del Diamant")
-  for (let i = 0; i < Math.min(cleanedLines.length - 1, 4); i++) {
+  for (let i = 0; i < Math.min(cleanedLines.length - 1, 5); i++) {
     const current = cleanedLines[i];
     const next = cleanedLines[i + 1];
 
-    // If both lines are short and could be part of a title
-    if (current.length >= 2 && current.length <= 30 &&
-        next.length >= 2 && next.length <= 30 &&
-        !isCommonNonTitle(current) && !isCommonNonTitle(next)) {
-      const combined = `${current} ${next}`;
-      if (combined.length <= 80) {
-        return combined;
+    // Skip if either line is a non-title
+    if (isCommonNonTitle(current) || isCommonNonTitle(next)) continue;
+
+    // If current line is short and next line starts with lowercase or "del/de/the/of"
+    // they likely form a single title
+    if (current.length >= 2 && current.length <= 25 &&
+        next.length >= 2 && next.length <= 25) {
+      const nextLower = next.toLowerCase();
+      const startsWithConnector = /^(del|de|the|of|and|y|i|e|a|en|in|un|una|el|la|los|las)\s/i.test(next);
+      const startsLowercase = next[0] === next[0].toLowerCase() && /^[a-záéíóúàèìòùñç]/i.test(next);
+
+      if (startsWithConnector || startsLowercase) {
+        const combined = `${current} ${next}`;
+        if (combined.length <= 80 && !isCommonNonTitle(combined)) {
+          return combined;
+        }
       }
     }
   }
 
-  // Strategy 3: Skip single-word lines at the start (often author names)
-  // and look for multi-word lines
-  for (const line of cleanedLines.slice(0, 6)) {
+  // Strategy 2: Look for multi-word lines in positions 2-5 (often title after author)
+  for (let i = 1; i < Math.min(validLines.length, 5); i++) {
+    const line = validLines[i];
     const wordCount = line.split(/\s+/).length;
-    if (wordCount >= 2 && line.length >= 5 && !isCommonNonTitle(line)) {
+    if (wordCount >= 2 && line.length >= 5) {
       return line;
     }
+  }
+
+  // Strategy 3: Find the longest valid line (but not too long - likely a description)
+  const sortedByLength = [...validLines]
+    .filter(l => l.length <= 60) // Exclude very long lines (descriptions)
+    .sort((a, b) => b.length - a.length);
+
+  if (sortedByLength.length > 0) {
+    return sortedByLength[0];
   }
 
   // Strategy 4: Just take the first valid line
-  for (const line of cleanedLines) {
-    if (line.length >= 2 && !isCommonNonTitle(line)) {
-      return line;
-    }
+  if (validLines.length > 0) {
+    return validLines[0];
   }
 
-  // Last resort: return the longest word
-  const words = text.split(/\s+/).filter(w => w.length >= 3);
-  if (words.length > 0) {
-    return words.reduce((a, b) => a.length >= b.length ? a : b);
+  // Last resort: return any cleaned line
+  if (cleanedLines.length > 0) {
+    return cleanedLines[0];
   }
 
   return undefined;
@@ -145,6 +156,12 @@ function isCommonNonTitle(text: string): boolean {
     /^\d+:\d+/, // timestamps
     /^(episode|season|chapter|part)\s*\d+$/i,
     /^www\.|https?:\/\//i,
+    // Credits and subtitle patterns
+    /^(amb|con|with|by|de|por)\s+/i, // "Amb un postfaci de...", "Con prólogo de..."
+    /\b(postfaci|prólogo|prologue|prefaci|preface|introducció|introduction)\b/i,
+    /\b(estudi|study|ensayo|essay)\s+(de|by|of)\b/i,
+    /\b(traducci|translat|edici|edit)\b/i,
+    /^(club|editor|editorial|publisher)/i,
   ];
 
   return nonTitlePatterns.some(p => p.test(text));
