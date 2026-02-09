@@ -17,6 +17,7 @@ import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
 import * as Clipboard from "expo-clipboard";
+import TextRecognition from "react-native-text-recognition";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
@@ -43,6 +44,7 @@ import {
 import { RootStackParamList } from "@/navigation/RootStackNavigator";
 import { getApiUrl } from "@/lib/query-client";
 import { getRemainingScanCount, incrementScanCount, getScanLimit } from "@/lib/ai-usage";
+import { parseOCRResult, isOCRResultSufficient } from "@/lib/ocr-parser";
 
 import successScanImage from "../assets/images/success-scan.png";
 
@@ -70,6 +72,9 @@ export default function AddRecommendationScreen() {
   const [isSaving, setIsSaving] = useState(false);
   const [urlCopied, setUrlCopied] = useState(false);
   const [remainingScans, setRemainingScans] = useState<number>(getScanLimit());
+  const [currentImageBase64, setCurrentImageBase64] = useState<string>("");
+  const [currentOCRText, setCurrentOCRText] = useState<string>("");
+  const [isOCRResult, setIsOCRResult] = useState(false);
 
   useEffect(() => {
     loadRemainingScans();
@@ -220,11 +225,6 @@ export default function AddRecommendationScreen() {
   };
 
   const handlePickImage = async () => {
-    if (remainingScans <= 0) {
-      showLimitReachedAlert();
-      return;
-    }
-
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       quality: 0.8,
@@ -241,11 +241,6 @@ export default function AddRecommendationScreen() {
   };
 
   const handleTakePhoto = async () => {
-    if (remainingScans <= 0) {
-      showLimitReachedAlert();
-      return;
-    }
-
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== "granted") {
       if (RNPlatform.OS === "web") {
@@ -270,33 +265,65 @@ export default function AddRecommendationScreen() {
 
   const processImage = async (base64: string, uri: string) => {
     setIsProcessing(true);
+    setCurrentImageBase64(base64);
+    setCurrentOCRText("");
+    setIsOCRResult(false);
 
     try {
-      const response = await fetch(`${getApiUrl()}api/recognize`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: base64 }),
-      });
+      // Step 1: Try OCR first (free, on-device)
+      let ocrSucceeded = false;
 
-      // Decrement scan count after API call (regardless of result)
-      const newRemaining = await incrementScanCount();
-      setRemainingScans(newRemaining);
+      if (RNPlatform.OS !== "web") {
+        try {
+          // react-native-text-recognition expects a file path without file:// prefix
+          const filePath = uri.startsWith("file://") ? uri.replace("file://", "") : uri;
+          console.log("[OCR] Starting recognition for path:", filePath);
 
-      if (response.ok) {
-        const result: AIRecognitionResult = await response.json();
-        setAiResult(result);
-        setTitle(result.title);
-        setCategory(result.category);
-        if (result.platform) {
-          setPlatforms([result.platform]);
-        } else {
-          setPlatforms([getDefaultPlatform(result.category)]);
+          // react-native-text-recognition returns an array of strings
+          const ocrLines = await TextRecognition.recognize(filePath);
+          console.log("[OCR] Raw result:", JSON.stringify(ocrLines));
+
+          const ocrText = Array.isArray(ocrLines) ? ocrLines.join("\n") : "";
+          console.log("[OCR] Combined text:", ocrText);
+
+          // Save OCR text for potential AI retry (cheaper than re-sending image)
+          if (ocrText.length > 0) {
+            setCurrentOCRText(ocrText);
+          }
+
+          const parsedOCR = parseOCRResult(ocrText);
+          console.log("[OCR] Parsed result:", JSON.stringify(parsedOCR));
+
+          // Use OCR result if we got any meaningful text
+          if (parsedOCR.title && parsedOCR.title.length > 0) {
+            // OCR found something - use it without counting AI scan
+            const detectedCategory = parsedOCR.category || "Other";
+            setAiResult({
+              title: parsedOCR.title,
+              category: detectedCategory,
+              platform: parsedOCR.platform,
+            });
+            setTitle(parsedOCR.title);
+            setCategory(detectedCategory);
+            if (parsedOCR.platform) {
+              setPlatforms([parsedOCR.platform]);
+            } else {
+              setPlatforms([getDefaultPlatform(detectedCategory)]);
+            }
+            ocrSucceeded = true;
+            setIsOCRResult(true);
+            console.log("[OCR] Success! Using OCR result");
+          } else {
+            console.log("[OCR] No title found, falling back to AI");
+          }
+        } catch (ocrError) {
+          console.log("[OCR] Error:", ocrError);
         }
-        if (result.platformUrl) {
-          setPlatformUrl(result.platformUrl);
-        }
-      } else {
-        setMode("manual");
+      }
+
+      // Step 2: If OCR didn't work, fall back to AI automatically
+      if (!ocrSucceeded) {
+        await processWithAI(base64);
       }
     } catch (error) {
       console.error("Recognition failed:", error);
@@ -306,13 +333,82 @@ export default function AddRecommendationScreen() {
     }
   };
 
+  const processWithAI = async (base64OrText: string, useTextEndpoint: boolean = false) => {
+    // Check if user has AI scans remaining
+    if (remainingScans <= 0) {
+      showLimitReachedAlert();
+      setMode("manual");
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      // Use text endpoint if we have OCR text (much cheaper)
+      const endpoint = useTextEndpoint ? "api/recognize-text" : "api/recognize";
+      const body = useTextEndpoint ? { text: base64OrText } : { image: base64OrText };
+
+      const url = `${getApiUrl()}${endpoint}`;
+      console.log(`[AI] Using ${useTextEndpoint ? "text" : "image"} endpoint:`, url);
+      console.log(`[AI] Request body:`, useTextEndpoint ? base64OrText.substring(0, 100) + "..." : "(image)");
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      console.log(`[AI] Response status:`, response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[AI] Error response:`, errorText);
+        setMode("manual");
+        return;
+      }
+
+      const result: AIRecognitionResult = await response.json();
+      console.log(`[AI] Result:`, JSON.stringify(result));
+
+      // Only decrement scan count when AI is actually used successfully
+      const newRemaining = await incrementScanCount();
+      setRemainingScans(newRemaining);
+
+      setAiResult(result);
+      setTitle(result.title);
+      setCategory(result.category);
+      if (result.platform) {
+        setPlatforms([result.platform]);
+      } else {
+        setPlatforms([getDefaultPlatform(result.category)]);
+      }
+      if (result.platformUrl) {
+        setPlatformUrl(result.platformUrl);
+      }
+      setIsOCRResult(false);
+    } catch (error) {
+      console.error("AI Recognition failed:", error);
+      setMode("manual");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleRetryWithAI = () => {
+    // Prefer using OCR text (cheaper) over image
+    if (currentOCRText) {
+      processWithAI(currentOCRText, true);
+    } else if (currentImageBase64) {
+      processWithAI(currentImageBase64, false);
+    }
+  };
+
   const handleUseResult = () => {
     setMode("manual");
   };
 
   const availablePlatforms = PLATFORM_BY_CATEGORY[category] || [];
 
-  const scanDisabled = remainingScans <= 0;
   const scanLimit = getScanLimit();
 
   const renderChooseMode = () => (
@@ -321,30 +417,26 @@ export default function AddRecommendationScreen() {
         {t("add.choose.title")}
       </ThemedText>
 
-      {/* AI Scans Info Banner */}
-      <View style={[styles.scanInfoBanner, { backgroundColor: scanDisabled ? `${theme.error}15` : `${theme.link}15`, borderColor: scanDisabled ? theme.error : theme.link }]}>
-        <Feather name={scanDisabled ? "alert-circle" : "zap"} size={18} color={scanDisabled ? theme.error : theme.link} />
+      {/* AI Scans Info Banner - informational only, OCR is always available */}
+      <View style={[styles.scanInfoBanner, { backgroundColor: `${theme.link}15`, borderColor: theme.link }]}>
+        <Feather name="cpu" size={18} color={theme.link} />
         <View style={styles.scanInfoContent}>
-          <ThemedText style={[styles.scanInfoTitle, { color: scanDisabled ? theme.error : theme.link }]}>
-            {t("ai.freeVersion")}: {remainingScans}/{scanLimit} {t("ai.scansRemaining")}
+          <ThemedText style={[styles.scanInfoTitle, { color: theme.link }]}>
+            {t("ai.ocrFirst")}
           </ThemedText>
-          {scanDisabled ? (
-            <ThemedText style={[styles.scanInfoText, { color: theme.textSecondary }]}>
-              {t("ai.limitReached.message")}
-            </ThemedText>
-          ) : null}
+          <ThemedText style={[styles.scanInfoText, { color: theme.textSecondary }]}>
+            {t("ai.fallbackInfo", { remaining: remainingScans, total: scanLimit })}
+          </ThemedText>
         </View>
       </View>
 
       <Pressable
         onPress={handlePickImage}
-        disabled={scanDisabled}
         style={[
           styles.optionButton,
           {
             backgroundColor: theme.backgroundDefault,
             borderColor: theme.border,
-            opacity: scanDisabled ? 0.5 : 1,
           },
         ]}
         testID="button-scan-image"
@@ -381,13 +473,11 @@ export default function AddRecommendationScreen() {
       {RNPlatform.OS !== "web" ? (
         <Pressable
           onPress={handleTakePhoto}
-          disabled={scanDisabled}
           style={[
             styles.optionButton,
             {
               backgroundColor: theme.backgroundDefault,
               borderColor: theme.border,
-              opacity: scanDisabled ? 0.5 : 1,
             },
           ]}
           testID="button-take-photo"
@@ -448,6 +538,25 @@ export default function AddRecommendationScreen() {
           <Button onPress={handleUseResult} style={styles.useButton}>
             {t("add.useThis")}
           </Button>
+
+          {/* Show "Retry with AI" button only for OCR results */}
+          {isOCRResult && remainingScans > 0 ? (
+            <Pressable
+              onPress={handleRetryWithAI}
+              style={[styles.retryAIButton, { borderColor: theme.border }]}
+            >
+              <Feather name="cpu" size={18} color={theme.link} />
+              <ThemedText style={[styles.retryAIText, { color: theme.link }]}>
+                {t("add.retryWithAI", { remaining: remainingScans })}
+              </ThemedText>
+            </Pressable>
+          ) : null}
+
+          {isOCRResult && remainingScans <= 0 ? (
+            <ThemedText style={[styles.noCreditsText, { color: theme.textTertiary }]}>
+              {t("add.noAICredits")}
+            </ThemedText>
+          ) : null}
         </Animated.View>
       ) : null}
     </Animated.View>
@@ -749,6 +858,25 @@ const styles = StyleSheet.create({
   },
   useButton: {
     width: "100%",
+  },
+  retryAIButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: Spacing.md,
+    marginTop: Spacing.md,
+    borderWidth: 1,
+    borderRadius: BorderRadius.md,
+    gap: Spacing.sm,
+  },
+  retryAIText: {
+    ...Typography.small,
+    fontWeight: "600",
+  },
+  noCreditsText: {
+    ...Typography.caption,
+    textAlign: "center",
+    marginTop: Spacing.md,
   },
   thumbnailImage: {
     width: "100%",

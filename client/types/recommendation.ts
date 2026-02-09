@@ -219,6 +219,8 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "add.processing": "Analyzing image...",
     "add.found": "Found it!",
     "add.useThis": "Use This",
+    "add.retryWithAI": "Improve with AI ({remaining} left)",
+    "add.noAICredits": "No AI credits left. Edit manually if needed.",
     "add.field.title": "Title",
     "add.field.title.placeholder": "e.g., The Great Gatsby",
     "add.field.category": "Category",
@@ -234,6 +236,8 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "ai.limitReached.title": "Scan limit reached",
     "ai.limitReached.message": "You've used all 3 free AI scans in this version. You can still add recommendations manually.",
     "ai.scanInfo": "In this Test version, you have {remaining} of {total} AI scans available.",
+    "ai.ocrFirst": "Smart text detection",
+    "ai.fallbackInfo": "AI backup: {remaining}/{total} uses left",
 
     // Detail
     "detail.title": "Details",
@@ -375,6 +379,8 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "add.processing": "Analizando imagen...",
     "add.found": "¡Encontrado!",
     "add.useThis": "Usar Esto",
+    "add.retryWithAI": "Mejorar con IA ({remaining} restantes)",
+    "add.noAICredits": "Sin créditos de IA. Edita manualmente si es necesario.",
     "add.field.title": "Título",
     "add.field.title.placeholder": "ej., El Gran Gatsby",
     "add.field.category": "Categoría",
@@ -390,6 +396,8 @@ export const TRANSLATIONS: Record<Language, Record<string, string>> = {
     "ai.limitReached.title": "Límite de escaneos alcanzado",
     "ai.limitReached.message": "Has usado los 3 escaneos con IA disponibles en esta versión. Aún puedes agregar recomendaciones manualmente.",
     "ai.scanInfo": "En esta versión de prueba, tienes {remaining} de {total} escaneos con IA disponibles.",
+    "ai.ocrFirst": "Detección inteligente de texto",
+    "ai.fallbackInfo": "Respaldo IA: {remaining}/{total} usos restantes",
 
     // Detail
     "detail.title": "Detalles",

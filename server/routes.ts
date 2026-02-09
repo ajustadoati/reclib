@@ -12,7 +12,7 @@ const openai = new OpenAI({
 
 interface AIRecognitionResult {
   title: string;
-  category: "Books" | "Movies" | "TV" | "Music" | "Podcasts" | "Other";
+  category: "Books" | "Movies" | "Series" | "TV" | "Music" | "Podcasts" | "Links" | "Kids" | "Other";
   author?: string;
   platformUrl?: string;
   platformName?: string;
@@ -22,9 +22,12 @@ interface AIRecognitionResult {
 const PLATFORM_SUGGESTIONS: Record<string, { name: string; baseUrl: string }> = {
   Books: { name: "Goodreads", baseUrl: "https://www.goodreads.com/search?q=" },
   Movies: { name: "IMDb", baseUrl: "https://www.imdb.com/find?q=" },
+  Series: { name: "IMDb", baseUrl: "https://www.imdb.com/find?q=" },
   TV: { name: "IMDb", baseUrl: "https://www.imdb.com/find?q=" },
   Music: { name: "Spotify", baseUrl: "https://open.spotify.com/search/" },
   Podcasts: { name: "Spotify", baseUrl: "https://open.spotify.com/search/" },
+  Links: { name: "Google", baseUrl: "https://www.google.com/search?q=" },
+  Kids: { name: "IMDb", baseUrl: "https://www.imdb.com/find?q=" },
   Other: { name: "Google", baseUrl: "https://www.google.com/search?q=" },
 };
 
@@ -103,6 +106,78 @@ If you cannot identify the content, make your best guess based on visual cues li
     } catch (error) {
       console.error("Recognition error:", error);
       res.status(500).json({ error: "Failed to recognize content" });
+    }
+  });
+
+  // Text-based recognition endpoint (cheaper than image-based)
+  app.post("/api/recognize-text", async (req: Request, res: Response) => {
+    try {
+      const { text } = req.body;
+
+      if (!text) {
+        return res.status(400).json({ error: "Text data is required" });
+      }
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini", // Use cheaper model for text processing
+        messages: [
+          {
+            role: "system",
+            content: `You are an AI assistant that analyzes OCR text extracted from screenshots to identify media recommendations (books, movies, TV shows, series, music, podcasts).
+
+Analyze the text and extract:
+1. The title of the media (look for the most prominent title, often a book/movie/show name)
+2. The category: Books, Movies, Series, TV, Music, Podcasts, Links, Kids, or Other
+3. The author/artist/director if mentioned
+4. The platform if mentioned (Netflix, Spotify, Goodreads, etc.)
+5. Your confidence level (0-1)
+
+Important:
+- For books, the title is usually separate from the author name
+- For streaming content, look for show/movie titles
+- Ignore UI elements like "Play", "Watch", "Subscribe", etc.
+
+Respond in JSON format:
+{
+  "title": "string",
+  "category": "Books" | "Movies" | "Series" | "TV" | "Music" | "Podcasts" | "Links" | "Kids" | "Other",
+  "author": "string or null",
+  "platform": "string or null",
+  "confidence": 0.0-1.0
+}`,
+          },
+          {
+            role: "user",
+            content: `Here is the OCR text extracted from a screenshot. Identify the media recommendation:\n\n${text}`,
+          },
+        ],
+        max_completion_tokens: 300,
+        response_format: { type: "json_object" },
+      });
+
+      const content = response.choices[0]?.message?.content;
+      if (!content) {
+        return res.status(500).json({ error: "No response from AI" });
+      }
+
+      const parsed = JSON.parse(content);
+      const category = parsed.category || "Other";
+      const platform = PLATFORM_SUGGESTIONS[category];
+      const encodedTitle = encodeURIComponent(parsed.title || "");
+
+      const result: AIRecognitionResult = {
+        title: parsed.title || "Unknown Title",
+        category: category,
+        author: parsed.author || undefined,
+        platformUrl: `${platform.baseUrl}${encodedTitle}`,
+        platformName: parsed.platform || platform.name,
+        confidence: parsed.confidence || 0.5,
+      };
+
+      res.json(result);
+    } catch (error) {
+      console.error("Text recognition error:", error);
+      res.status(500).json({ error: "Failed to recognize content from text" });
     }
   });
 
