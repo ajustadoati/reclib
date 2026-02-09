@@ -17,8 +17,9 @@ import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
 import * as Clipboard from "expo-clipboard";
-import TextRecognition from "react-native-text-recognition";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
+
+import { recognizeText } from "@/lib/text-recognition";
 
 import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
 import { ThemedText } from "@/components/ThemedText";
@@ -275,12 +276,10 @@ export default function AddRecommendationScreen() {
 
       if (RNPlatform.OS !== "web") {
         try {
-          // react-native-text-recognition expects a file path without file:// prefix
-          const filePath = uri.startsWith("file://") ? uri.replace("file://", "") : uri;
-          console.log("[OCR] Starting recognition for path:", filePath);
+          console.log("[OCR] Starting recognition for:", uri);
 
-          // react-native-text-recognition returns an array of strings
-          const ocrLines = await TextRecognition.recognize(filePath);
+          // Use wrapper that handles platform differences
+          const ocrLines = await recognizeText(uri);
           console.log("[OCR] Raw result:", JSON.stringify(ocrLines));
 
           const ocrText = Array.isArray(ocrLines) ? ocrLines.join("\n") : "";
