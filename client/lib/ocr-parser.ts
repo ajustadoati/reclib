@@ -81,25 +81,54 @@ function cleanText(text: string): string {
 
 function extractPotentialTitle(text: string): string | undefined {
   const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  const cleanedLines = lines.map(l => cleanText(l)).filter(l => l.length > 0);
 
-  // First pass: look for good title candidates in first 5 lines
-  for (const line of lines.slice(0, 5)) {
-    const cleaned = cleanText(line);
-    // Skip very short or very long text, and common non-titles
-    if (cleaned.length >= 2 && cleaned.length <= 100 && !isCommonNonTitle(cleaned)) {
-      return cleaned;
+  if (cleanedLines.length === 0) return undefined;
+
+  // Strategy 1: Find the longest meaningful line (often the title)
+  const meaningfulLines = cleanedLines
+    .filter(l => l.length >= 3 && l.length <= 100 && !isCommonNonTitle(l))
+    .sort((a, b) => b.length - a.length);
+
+  if (meaningfulLines.length > 0) {
+    // Return the longest line that looks like a title
+    return meaningfulLines[0];
+  }
+
+  // Strategy 2: Try to combine consecutive short lines that might form a title
+  // (e.g., "La plaça" + "del Diamant" = "La plaça del Diamant")
+  for (let i = 0; i < Math.min(cleanedLines.length - 1, 4); i++) {
+    const current = cleanedLines[i];
+    const next = cleanedLines[i + 1];
+
+    // If both lines are short and could be part of a title
+    if (current.length >= 2 && current.length <= 30 &&
+        next.length >= 2 && next.length <= 30 &&
+        !isCommonNonTitle(current) && !isCommonNonTitle(next)) {
+      const combined = `${current} ${next}`;
+      if (combined.length <= 80) {
+        return combined;
+      }
     }
   }
 
-  // Second pass: if nothing found, just take the first non-empty line
-  for (const line of lines) {
-    const cleaned = cleanText(line);
-    if (cleaned.length >= 2) {
-      return cleaned;
+  // Strategy 3: Skip single-word lines at the start (often author names)
+  // and look for multi-word lines
+  for (const line of cleanedLines.slice(0, 6)) {
+    const wordCount = line.split(/\s+/).length;
+    if (wordCount >= 2 && line.length >= 5 && !isCommonNonTitle(line)) {
+      return line;
     }
   }
 
-  // Last resort: return the longest word from the text
+  // Strategy 4: Just take the first valid line
+  for (const line of cleanedLines) {
+    if (line.length >= 2 && !isCommonNonTitle(line)) {
+      return line;
+    }
+  }
+
+  // Last resort: return the longest word
   const words = text.split(/\s+/).filter(w => w.length >= 3);
   if (words.length > 0) {
     return words.reduce((a, b) => a.length >= b.length ? a : b);

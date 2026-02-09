@@ -110,6 +110,7 @@ export default function AddRecommendationScreen() {
 
   const loadRemainingScans = async () => {
     const remaining = await getRemainingScanCount();
+    console.log("[Credits] Loaded remaining scans:", remaining);
     setRemainingScans(remaining);
   };
 
