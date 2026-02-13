@@ -90,6 +90,19 @@ function extractPotentialTitle(text: string): string | undefined {
     l.length >= 2 && l.length <= 100 && !isCommonNonTitle(l)
   );
 
+  // Strategy 0: If all/most lines are short single words, they likely form a stacked title
+  // (e.g., "NO", "OTHER", "CHOICE" → "NO OTHER CHOICE")
+  const shortSingleWordLines = validLines.filter(l =>
+    l.split(/\s+/).length === 1 && l.length >= 2 && l.length <= 15
+  );
+  if (shortSingleWordLines.length >= 2 && shortSingleWordLines.length <= 6) {
+    // Check if these look like title words (not just random text)
+    const combined = shortSingleWordLines.join(' ');
+    if (combined.length >= 5 && combined.length <= 60) {
+      return combined;
+    }
+  }
+
   // Strategy 1: Try to combine consecutive short lines that might form a title
   // This is common for book covers where title spans multiple lines
   // (e.g., "La plaça" + "del Diamant" = "La plaça del Diamant")

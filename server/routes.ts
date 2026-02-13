@@ -132,10 +132,13 @@ Analyze the text and extract:
 4. The platform if mentioned (Netflix, Spotify, Goodreads, etc.)
 5. Your confidence level (0-1)
 
-Important:
-- For books, the title is usually separate from the author name
-- For streaming content, look for show/movie titles
+CRITICAL - Title extraction rules:
+- Words on SEPARATE LINES often form a SINGLE title. Combine them!
+  Example: "NO\\nOTHER\\nCHOICE" should become "No Other Choice"
+  Example: "La plaça\\ndel Diamant" should become "La plaça del Diamant"
+- For books, author name (usually 1-2 words like "Mercè Rodoreda") comes before the title
 - Ignore UI elements like "Play", "Watch", "Subscribe", etc.
+- Ignore credits like "postfaci de", "estudi de", "traducció", "editorial"
 
 Respond in JSON format:
 {
