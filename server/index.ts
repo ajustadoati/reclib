@@ -401,22 +401,19 @@ function configureExpoAndLanding(app: express.Application) {
   app.use("/assets", express.static(path.resolve(process.cwd(), "assets")));
   app.use(express.static(path.resolve(process.cwd(), "static-build")));
 
-  // Serve web app at /app
+  // Serve web app - all assets at root level (Expo generates absolute paths)
   const webBuildPath = path.resolve(process.cwd(), "web-build");
 
-  // Serve _expo assets at root level (required by Expo web build)
-  app.use("/_expo", express.static(path.join(webBuildPath, "_expo")));
+  // Serve all web build static files at root (fonts, images, _expo, assets, etc.)
+  app.use(express.static(webBuildPath, { index: false }));
 
-  // Serve web app static files
-  app.use("/app", express.static(webBuildPath));
-
-  // Handle client-side routing for the web app (SPA fallback)
-  app.use("/app", (_req: Request, res: Response, next: NextFunction) => {
+  // Serve /app route - returns the web app index.html
+  app.get("/app", (_req: Request, res: Response) => {
     const indexPath = path.join(webBuildPath, "index.html");
     if (fs.existsSync(indexPath)) {
       res.sendFile(indexPath);
     } else {
-      next();
+      res.status(404).send("Web app not available. Please try again later.");
     }
   });
 
