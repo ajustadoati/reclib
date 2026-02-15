@@ -401,6 +401,20 @@ function configureExpoAndLanding(app: express.Application) {
   app.use("/assets", express.static(path.resolve(process.cwd(), "assets")));
   app.use(express.static(path.resolve(process.cwd(), "static-build")));
 
+  // Serve web app at /app
+  const webBuildPath = path.resolve(process.cwd(), "web-build");
+  app.use("/app", express.static(webBuildPath));
+
+  // Handle client-side routing for the web app
+  app.get("/app/*", (_req: Request, res: Response) => {
+    const indexPath = path.join(webBuildPath, "index.html");
+    if (fs.existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      res.status(404).send("Web app not available");
+    }
+  });
+
   log("Expo routing: Checking expo-platform header on / and /manifest");
 }
 
