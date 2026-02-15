@@ -405,13 +405,13 @@ function configureExpoAndLanding(app: express.Application) {
   const webBuildPath = path.resolve(process.cwd(), "web-build");
   app.use("/app", express.static(webBuildPath));
 
-  // Handle client-side routing for the web app
-  app.get("/app/*", (_req: Request, res: Response) => {
+  // Handle client-side routing for the web app (SPA fallback)
+  app.use("/app", (_req: Request, res: Response, next: NextFunction) => {
     const indexPath = path.join(webBuildPath, "index.html");
     if (fs.existsSync(indexPath)) {
       res.sendFile(indexPath);
     } else {
-      res.status(404).send("Web app not available");
+      next();
     }
   });
 
