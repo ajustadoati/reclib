@@ -403,6 +403,11 @@ function configureExpoAndLanding(app: express.Application) {
 
   // Serve web app at /app
   const webBuildPath = path.resolve(process.cwd(), "web-build");
+
+  // Serve _expo assets at root level (required by Expo web build)
+  app.use("/_expo", express.static(path.join(webBuildPath, "_expo")));
+
+  // Serve web app static files
   app.use("/app", express.static(webBuildPath));
 
   // Handle client-side routing for the web app (SPA fallback)
